@@ -1,0 +1,44 @@
+# Bí mật — KHÔNG commit
+.env
+.env.*
+!.env.example
+*.pem
+credentials*.json
+token*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Dữ liệu cá nhân & runtime
+backend/data/*
+!backend/data/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+traces/
+*.ogg
+*.wav
+
+# Benchmark: chỉ giữ báo cáo tổng hợp, không giữ log thô
+backend/benchmarks/results/raw/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# IDE / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
