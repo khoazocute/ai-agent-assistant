@@ -56,7 +56,16 @@ def build_schedule_tools(session_factory: SessionFactory, now: Callable[[], date
         """Sửa hoặc dời một sự kiện (lấy id từ list_events). Chỉ truyền trường cần đổi."""
         return with_service(lambda s: s.update_event(event_id, title, start_at, end_at, location, note))
 
-    @agent_tool(risk=Risk.DESTRUCTIVE)
+    def describe_delete(event_id: int) -> str:
+        from app.db.models import Event
+
+        with session_scope(session_factory) as s:
+            e = s.get(Event, event_id)
+            if e is None:
+                return f"Xoá sự kiện #{event_id} (không còn tồn tại)"
+            return f"Xoá sự kiện #{e.id}: {e.title} · {e.start_at:%H:%M %d/%m/%Y}–{e.end_at:%H:%M}"
+
+    @agent_tool(risk=Risk.DESTRUCTIVE, describe=describe_delete)
     def delete_event(event_id: int) -> EventOut:
         """Xoá một sự kiện. Cần người dùng duyệt nên có thể chưa thực hiện ngay."""
         return with_service(lambda s: s.delete_event(event_id))

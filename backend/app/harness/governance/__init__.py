@@ -1,7 +1,7 @@
-"""Governance Harness — luật được thực thi bằng code, không chỉ bằng prompt.
+"""Governance Harness — luật lệ, trách nhiệm giải trình, khả năng tắt khẩn cấp.
 
-- policy_engine.py   đọc config/policies.yaml → allow | require_approval | deny (bước 11)
-- audit.py           ghi audit_log cho mọi thao tác ghi và quyết định duyệt  (bước 11)
-- prompt_release.py  chỉ kích hoạt prompt mới khi eval đạt ngưỡng             (bước 14)
-- killswitch.py      bật/tắt agent hoặc tool không cần deploy lại             (bước 14)
+- policy_engine.py  policy-as-code từ config/policies.yaml: allow / require_approval / deny,
+                    kill switch theo tool/agent, luật cứng "external luôn cần duyệt"   (bước 11, ADR-0010)
+- audit.py          audit_log: ai đã làm gì, lúc nào — chỉ ghi thêm                    (bước 11)
+- prompt_release    kích hoạt prompt khi eval đạt ngưỡng — xem evals/ + ADR-0005
 """

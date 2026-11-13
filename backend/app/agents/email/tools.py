@@ -72,7 +72,13 @@ def build_email_tools(session_factory: SessionFactory, provider: EmailProvider,
         """Các bản nháp chưa gửi."""
         return with_service(lambda s: s.list_drafts())
 
-    @agent_tool(risk=Risk.EXTERNAL, timeout_s=60)
+    def describe_send(draft_id: int) -> str:
+        # Người duyệt phải thấy ĐẦY ĐỦ thứ sẽ được gửi — đây chính là nội dung sẽ gửi đi.
+        d = with_service(lambda s: s.get_draft(draft_id))
+        warn = f"\n⚠ Có thể chứa thông tin nhạy cảm: {', '.join(d.pii_warnings)}" if d.pii_warnings else ""
+        return f"Gửi thư (bản nháp #{d.id})\nTới: {', '.join(d.to)}\nTiêu đề: {d.subject}\n---\n{d.body}{warn}"
+
+    @agent_tool(risk=Risk.EXTERNAL, timeout_s=60, describe=describe_send)
     def send_email(draft_id: Annotated[int, Field(description="id bản nháp từ create_draft")]) -> DraftOut:
         """Gửi một bản nháp. LUÔN cần người dùng duyệt — tool sẽ tạo yêu cầu duyệt thay vì gửi ngay."""
         return with_service(lambda s: s.send_draft(draft_id))

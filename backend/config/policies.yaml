@@ -1,0 +1,27 @@
+# Policy-as-code (harness/governance/policy_engine.py) — "prompt là hướng dẫn, code là luật".
+# Sửa file này có hiệu lực NGAY ở lần gọi tool tiếp theo (không cần khởi động lại) → dùng làm kill switch.
+#
+# Quyết định: allow (chạy ngay) · require_approval (tạo yêu cầu duyệt) · deny (từ chối)
+# Luật cứng trong code, YAML không ghi đè được: tool rủi ro `external` (gửi mail…) KHÔNG BAO GIỜ được allow.
+
+version: 1
+
+# Mặc định theo mức rủi ro của tool
+defaults:
+  read: allow
+  write: allow
+  destructive: require_approval
+  external: require_approval
+
+# Ghi đè cho từng tool (ưu tiên hơn defaults)
+tools:
+  send_email: require_approval
+  delete_transaction: require_approval
+  delete_event: require_approval
+
+# Kill switch: tắt tool / agent ngay lập tức (deny)
+disabled_tools: []
+disabled_agents: []        # vd. [email] → Email Agent và tool ask_email_agent đều bị từ chối
+
+# Yêu cầu duyệt tự hết hạn sau N giờ (tránh bấm nhầm một yêu cầu cũ)
+approval_ttl_hours: 24

@@ -78,7 +78,16 @@ def build_finance_tools(session_factory: SessionFactory, today: Callable[[], dat
         s, e = (None, None) if not (period or start or end) else date_range(period, start, end)
         return with_service(lambda svc: svc.list_transactions(s, e, category, limit))
 
-    @agent_tool(risk=Risk.DESTRUCTIVE)
+    def describe_delete(transaction_id: int) -> str:
+        with session_scope(session_factory) as s:
+            match = [t for t in FinanceService(s, today).list_transactions(limit=1000) if t.id == transaction_id]
+        if not match:
+            return f"Xoá giao dịch #{transaction_id} (không còn tồn tại)"
+        t = match[0]
+        amount = f"{t.amount_vnd:,}đ".replace(",", ".")
+        return f"Xoá giao dịch #{t.id}: {amount} · {t.category_name} · {t.occurred_on:%d/%m/%Y} · {t.note}"
+
+    @agent_tool(risk=Risk.DESTRUCTIVE, describe=describe_delete)
     def delete_transaction(
         transaction_id: Annotated[int, Field(description="id lấy từ list_transactions")],
     ) -> TransactionOut:

@@ -1,12 +1,14 @@
 """Dòng lệnh để dùng thử agent và xem vận hành (trước/song song với Telegram/web).
 
-    python -m app.cli chat [--agent schedule] [--quiet]   chat với agent, in Thought/Action/Observation
+    python -m app.cli chat [--agent X] [--quiet]   chat (mặc định: DEFAULT_AGENT, vd. supervisor)
     python -m app.cli summary [period]   báo cáo thu chi — gọi THẲNG service, không qua LLM
     python -m app.cli list [n]           n giao dịch gần nhất
     python -m app.cli events [days]      lịch từ hôm nay tới `days` ngày sau + việc cần làm
     python -m app.cli runs [n]           các run gần nhất (từ DB)
     python -m app.cli run <run_id>       xem lại CHÍNH XÁC prompt + tool từng bước của một run
     python -m app.cli stats              thống kê theo agent: thành công, p50/p95, token, chi phí
+    python -m app.cli approvals          yêu cầu đang chờ duyệt · approve <id> · reject <id>
+    python -m app.cli audit [n]          nhật ký audit: ai đã làm gì
 """
 
 from __future__ import annotations
@@ -23,13 +25,16 @@ def vnd(amount: int) -> str:
     return f"{amount:,}đ".replace(",", ".")
 
 
-def cmd_chat(quiet: bool) -> None:
-    from app.agents.finance.agent import FinanceAgent
-    from app.bootstrap import make_llm, make_tracer, setup_database
+def cmd_chat(agent_name: str | None, quiet: bool) -> None:
+    from app.runtime import Runtime
 
-    factory = setup_database()
-    agent = FinanceAgent(make_llm(), factory)
-    print(f"Finance Agent · model {agent.llm.model} · prompt {agent.prompt.version}. Gõ 'thoát' để dừng.\n")
+    rt = Runtime.create()
+    agent = rt.agent(agent_name)
+    if not rt.agent_enabled(agent.name):
+        sys.exit(f"Agent '{agent.name}' đang bị tắt trong config/policies.yaml (disabled_agents).")
+    print(f"Agent {agent.name} · model {agent.llm.model} · prompt {agent.prompt.version}. Gõ 'thoát' để dừng.")
+    print("Yêu cầu cần duyệt: `python -m app.cli approvals` ở cửa sổ khác.\n")
+    history: list[tuple[str, str]] = []
     while True:
         try:
             text = input("Bạn: ").strip()
@@ -39,12 +44,14 @@ def cmd_chat(quiet: bool) -> None:
             break
         if not text:
             continue
-        tracer = make_tracer(factory, channel="cli", console=not quiet)
+        tracer = rt.tracer(channel="cli", console=not quiet)
         try:
-            result = agent.run(text, tracer)
+            # Memory ngắn hạn trong phiên CLI: gửi kèm 6 lượt gần nhất (bước 12 lưu vào DB cho Telegram/web).
+            result = agent.run(text, tracer, history=history[-6:])
         except Exception as e:  # lỗi mạng/API sau khi đã retry: báo và cho nhập tiếp, không thoát
             print(f"⚠ Lỗi khi gọi model: {type(e).__name__}: {e}\n")
             continue
+        history += [("user", text), ("assistant", result.answer)]
         print(f"\nAgent: {result.answer}\n" if quiet else f"  (run {tracer.run_id})\n")
 
 
@@ -164,6 +171,42 @@ def cmd_stats() -> None:
         print("  (chưa có dữ liệu)")
 
 
+def cmd_approvals() -> None:
+    from app.runtime import Runtime
+
+    pending = Runtime.create().approvals.list("pending")
+    for pa in pending:
+        print(f"\n#{pa.id} · {pa.tool} · agent {pa.agent} · hết hạn {pa.expires_at:%d/%m %H:%M}")
+        print("  " + pa.summary.replace("\n", "\n  "))
+    print(f"\n{len(pending)} yêu cầu đang chờ. Duyệt: `python -m app.cli approve <id>` · từ chối: `reject <id>`"
+          if pending else "  (không có yêu cầu nào đang chờ duyệt)")
+
+
+def cmd_decide(action_id: int, approve: bool) -> None:
+    from app.harness.orchestration.approvals import ApprovalError
+    from app.runtime import Runtime
+
+    rt = Runtime.create()
+    try:
+        pa = rt.approve(action_id, "user:cli") if approve else rt.reject(action_id, "user:cli")
+    except ApprovalError as e:
+        sys.exit(f"⚠ {e}")
+    if pa.status == "executed":
+        print(f"✅ Đã duyệt và thực hiện #{pa.id} ({pa.tool}).")
+    elif pa.status == "failed":
+        print(f"❌ Đã duyệt #{pa.id} nhưng thực hiện lỗi: {pa.error}")
+    else:
+        print(f"🚫 Đã từ chối #{pa.id} ({pa.tool}) — không có gì được thực hiện.")
+
+
+def cmd_audit(limit: int) -> None:
+    from app.runtime import Runtime
+
+    for e in Runtime.create().audit.recent(limit):
+        print(f"  {e.ts:%d/%m %H:%M:%S}  {e.actor:<16} {e.action:<26} {e.target:<14} "
+              f"{json.dumps(e.detail, ensure_ascii=False)[:90]}")
+
+
 def main() -> None:
     from app.agents.registry import AGENT_NAMES
     from app.services.finance_service import Period
@@ -173,7 +216,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
     chat = sub.add_parser("chat", help="chat với agent")
-    chat.add_argument("--agent", default="finance", choices=AGENT_NAMES)
+    chat.add_argument("--agent", default=None, choices=AGENT_NAMES, help="mặc định: DEFAULT_AGENT trong .env")
     chat.add_argument("--quiet", action="store_true", help="chỉ in câu trả lời, không in trace")
     summary = sub.add_parser("summary", help="báo cáo thu chi (không qua LLM)")
     summary.add_argument("period", nargs="?", default="this_month", choices=get_args(Period))
@@ -182,6 +225,10 @@ def main() -> None:
     sub.add_parser("runs", help="các run gần nhất").add_argument("limit", nargs="?", type=int, default=20)
     sub.add_parser("run", help="xem chi tiết một run").add_argument("run_id")
     sub.add_parser("stats", help="thống kê vận hành theo agent")
+    sub.add_parser("approvals", help="yêu cầu đang chờ duyệt")
+    sub.add_parser("approve", help="duyệt + thực hiện").add_argument("id", type=int)
+    sub.add_parser("reject", help="từ chối").add_argument("id", type=int)
+    sub.add_parser("audit", help="nhật ký audit").add_argument("limit", nargs="?", type=int, default=30)
 
     args = parser.parse_args()
     match args.command:
@@ -199,6 +246,12 @@ def main() -> None:
             cmd_run(args.run_id)
         case "stats":
             cmd_stats()
+        case "approvals":
+            cmd_approvals()
+        case "approve" | "reject":
+            cmd_decide(args.id, approve=args.command == "approve")
+        case "audit":
+            cmd_audit(args.limit)
 
 
 if __name__ == "__main__":

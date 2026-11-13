@@ -38,6 +38,7 @@ class BaseAgent:
         self.registry = registry
         # Hàm tạo executor (không phải executor dựng sẵn): bước 11 truyền vào executor có policy + duyệt.
         self.executor = make_executor(registry)
+        self.executor.agent_name = self.name
 
     def run(self, user_text: str, tracer: Tracer | None = None, history: list[tuple[str, str]] | None = None,
             meta: dict[str, Any] | None = None) -> RunResult:

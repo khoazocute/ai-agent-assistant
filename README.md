@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_10%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_11%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -100,6 +100,7 @@ _Chưa có số liệu: benchmark cần ~150 request (vượt gói Gemini miễn
 | [0007](docs/adr/0007-thuat-toan-xep-lich-xac-dinh.md) | Thuật toán xếp lịch xác định; đề xuất → người dùng đồng ý → áp dụng | Accepted |
 | [0008](docs/adr/0008-single-hay-multi-agent.md) | Single vs multi-agent quyết định bằng benchmark (chờ số liệu) | Proposed |
 | [0009](docs/adr/0009-email-la-du-lieu-khong-tin-cay.md) | Email là dữ liệu không tin cậy: bọc, gắn cờ, giới hạn tool, chặn gửi ở code | Accepted |
+| [0010](docs/adr/0010-thuc-thi-xac-dinh-sau-khi-duyet.md) | Policy-as-code + duyệt; duyệt xong code chạy đúng tham số đã lưu | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
 
@@ -126,6 +127,7 @@ python -m app.cli events            # lịch 7 ngày tới + việc cần làm
 python -m app.cli summary           # báo cáo tháng này — tính bằng code, không qua LLM
 python -m app.cli list              # giao dịch gần nhất
 python -m app.cli runs              # các lần chạy gần nhất · `run <id>` xem lại prompt + tool · `stats` thống kê
+python -m app.cli approvals         # yêu cầu chờ duyệt (gửi thư, xoá…) · `approve <id>` · `reject <id>` · `audit`
 python -m evals.run                 # eval 15 ca với Gemini thật (xem backend/evals/README.md)
 ```
 Dữ liệu lưu ở `backend/data/app.db` (SQLite, không commit).
@@ -164,7 +166,7 @@ frontend/          website React (bước 13)
 | 1. Hiểu ReAct từ gốc | 1 · Gọi Gemini + 1 tool · 2 · Vòng ReAct + tracer · 3 · Tool registry + executor | ✅ |
 | 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ✅ |
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ✅ |
-| 4. An toàn | 10 · Gmail + chống injection ✅ · 11 · Duyệt + policy + audit | 🔄 |
+| 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ✅ |
 | 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ⬜ |
 | 6. Mở rộng | 16 · Bản tin · 17 · Ảnh hóa đơn · 18 · Giọng nói | ⬜ |
 | 7. Hoàn thiện | 19 · Benchmark đầy đủ · 20 · Docker, CI, demo, playbook | ⬜ |
