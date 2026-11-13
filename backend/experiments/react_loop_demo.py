@@ -5,7 +5,7 @@ Model phải tự lên kế hoạch, gọi tool theo thứ tự, đọc Observat
 (Từ bước 3, tool khai báo bằng @agent_tool trong demo_tools.py thay vì viết tay JSON schema.)
 
 Chạy từ thư mục gốc dự án:
-    .\\.venv\\Scripts\\python.exe backend\\experiments\\step02_react_loop.py ["câu hỏi khác"]
+    .\\.venv\\Scripts\\python.exe backend\\experiments\\react_loop_demo.py ["câu hỏi khác"]
 Trace đầy đủ: backend/data/traces/<run_id>.jsonl (không commit).
 """
 

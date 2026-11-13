@@ -8,7 +8,7 @@ Mục tiêu: nhìn tận mắt cơ chế tool use (function calling) mà vòng R
 Cố tình viết tay 2 lượt gọi (không dùng vòng lặp) để thấy rõ từng bước.
 
 Chạy từ thư mục gốc dự án:
-    .\\.venv\\Scripts\\python.exe backend\\experiments\\step01_first_tool_call.py
+    .\\.venv\\Scripts\\python.exe backend\\experiments\\first_tool_call.py
 """
 
 import json
@@ -129,7 +129,7 @@ def main() -> None:
     show("Lượt 2", r2)
 
     # Lưu toàn bộ những gì đã gửi/nhận — tiền thân của tracer ở bước 2 và trang Agent Runs.
-    trace_path = ROOT / "backend" / "data" / "step01_trace.json"
+    trace_path = ROOT / "backend" / "data" / "traces" / "first_tool_call.json"
     trace = {"model": MODEL, "config": config, "contents": contents, "responses": [r1, r2]}
     trace_json = json.dumps(trace, default=to_jsonable, ensure_ascii=False, indent=2)
     trace_path.write_text(trace_json, encoding="utf-8")

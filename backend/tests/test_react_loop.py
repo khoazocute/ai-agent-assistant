@@ -2,36 +2,14 @@
 kết quả lặp lại được. Kiểm tra LOGIC của vòng lặp, không kiểm tra độ thông minh của model (đó là eval)."""
 
 import json
-from typing import Any
+
+from fakes import FakeLLM
 
 from app.harness.agentops.tracer import Tracer
-from app.harness.orchestration.llm_client import LLMResponse, ToolCall, ToolResult, ToolSpec, Usage
+from app.harness.orchestration.llm_client import ToolCall, ToolResult, Usage
 from app.harness.orchestration.react_loop import run_react
 from app.harness.tools.executor import ToolExecutor
 from app.harness.tools.registry import Risk, ToolRegistry, agent_tool
-
-
-class FakeLLM:
-    model = "fake"
-
-    def __init__(self, script: list[list[ToolCall] | str]) -> None:
-        # Mỗi phần tử là một lượt: list ToolCall (model muốn gọi tool) hoặc str (câu trả lời cuối).
-        self.script = list(script)
-        self.seen_histories: list[list[Any]] = []
-
-    def user_message(self, text: str) -> Any:
-        return {"role": "user", "text": text}
-
-    def tool_results_message(self, results: list[ToolResult]) -> Any:
-        return {"role": "tool", "results": results}
-
-    def generate(self, system: str, history: list[Any], tools: list[ToolSpec]) -> LLMResponse:
-        self.seen_histories.append(list(history))
-        turn = self.script.pop(0)
-        calls = [] if isinstance(turn, str) else turn
-        text = turn if isinstance(turn, str) else ""
-        return LLMResponse(text, ["thinking..."], calls, Usage(10, 5, 2), "STOP", 1,
-                           message={"role": "model", "calls": calls, "text": text})
 
 
 @agent_tool(risk=Risk.READ)
@@ -49,11 +27,6 @@ def boom() -> None:
 EXECUTOR = ToolExecutor(ToolRegistry([add, boom]))
 
 
-def observations(llm: FakeLLM, turn: int = 1) -> list[ToolResult]:
-    """Kết quả tool mà model nhìn thấy ở lượt `turn` (message cuối của history)."""
-    return llm.seen_histories[turn][-1]["results"]
-
-
 def test_answers_directly_without_tools():
     llm = FakeLLM(["Xin chào!"])
     result = run_react(llm, "sys", "chào", EXECUTOR)
@@ -68,7 +41,7 @@ def test_runs_tool_and_feeds_observation_back():
     # Lượt 2 phải thấy: câu hỏi → lượt của model → kết quả tool (đúng thứ tự, đúng id).
     user, model_turn, _ = llm.seen_histories[1]
     assert user["text"] == "2+3?" and model_turn["role"] == "model"
-    assert observations(llm) == [ToolResult("c1", "add", 5)]
+    assert llm.observations() == [ToolResult("c1", "add", 5)]
     assert result.usage == Usage(20, 10, 4)  # cộng dồn qua các bước
 
 
@@ -76,13 +49,13 @@ def test_parallel_calls_go_back_in_one_message_in_order():
     calls = [ToolCall("c1", "add", {"a": 1, "b": 1}), ToolCall("c2", "add", {"a": 2, "b": 2})]
     llm = FakeLLM([calls, "xong"])
     run_react(llm, "sys", "?", EXECUTOR)
-    assert [r.output for r in observations(llm)] == [2, 4]
+    assert [r.output for r in llm.observations()] == [2, 4]
 
 
 def test_tool_exception_becomes_error_observation():
     llm = FakeLLM([[ToolCall("c1", "boom", {})], "Tool lỗi, tôi xin lỗi"])
     result = run_react(llm, "sys", "?", EXECUTOR)
-    (obs,) = observations(llm)
+    (obs,) = llm.observations()
     assert obs.is_error and "ValueError: hỏng rồi" in obs.output
     assert result.status == "ok"  # run không sập
 
@@ -108,3 +81,17 @@ def test_tracer_writes_every_event_as_jsonl(tmp_path):
     assert tool_event["args"] == {"a": 2, "b": 3} and tool_event["output"] == 5
     assert (tool_event["risk"], tool_event["status"]) == ("read", "ok")
     assert {e["run_id"] for e in events} == {tracer.run_id}
+
+
+def test_llm_failure_still_closes_the_run_in_trace(tmp_path):
+    class BrokenLLM(FakeLLM):
+        def generate(self, *args):
+            raise ConnectionError("503 quá tải")
+
+    tracer = Tracer(directory=tmp_path)
+    try:
+        run_react(BrokenLLM([]), "sys", "?", EXECUTOR, tracer=tracer)
+    except ConnectionError:
+        pass
+    last = json.loads(tracer.path.read_text(encoding="utf-8").splitlines()[-1])
+    assert (last["type"], last["status"]) == ("run_end", "error") and "503" in last["error"]

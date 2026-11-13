@@ -6,7 +6,7 @@
 - `harness/orchestration/react_loop.py`: `run_react(...)` lặp tới khi model không gọi tool nữa hoặc chạm `max_steps`; lỗi tool thành Observation.
 - `harness/agentops/tracer.py`: mỗi run một file `backend/data/traces/<run_id>.jsonl` + in console Thought/Action/Observation.
 - `tests/test_react_loop.py`: 7 test với `FakeLLM` (không gọi mạng).
-- `experiments/step02_react_loop.py`: 3 tool (`get_current_time`, `days_between`, `calculate` an toàn không dùng `eval`).
+- `experiments/react_loop_demo.py`: 3 tool (`get_current_time`, `days_between`, `calculate` an toàn không dùng `eval`).
 
 ## Kết quả chạy thật
 ```
@@ -35,7 +35,7 @@ Ca lỗi: `calculate("1500000 / 0")` → `❌ ZeroDivisionError` → model giả
 3. Test với `FakeLLM` chứng minh được điều gì, và **không** chứng minh được điều gì? (gợi ý: test vs eval)
 
 ## Bài tập
-1. Chạy `step02_react_loop.py` với `max_steps=2` cho câu hỏi mặc định và xem `run_end` báo gì.
+1. Chạy `react_loop_demo.py` với `max_steps=2` cho câu hỏi mặc định và xem `run_end` báo gì.
 2. Mở file `.jsonl` mới nhất trong `backend/data/traces/`, tìm sự kiện `llm_request` của bước 3 và đếm xem history có bao nhiêu message — khớp với khái niệm 4 không?
 3. (Thêm) Xoá câu "Chỉ chấp nhận số thuần (85000, không phải 85k)" khỏi mô tả `calculate`, hỏi lại và xem model có gửi "85k" rồi tự sửa sau Observation lỗi không.
 

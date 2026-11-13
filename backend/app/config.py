@@ -1,0 +1,49 @@
+"""Cấu hình ứng dụng — đọc từ `.env` ở thư mục gốc, một chỗ duy nhất (pydantic-settings).
+
+Vì sao không `os.environ[...]` rải rác: sai tên biến / thiếu biến được phát hiện ngay khi khởi động,
+có kiểu dữ liệu và giá trị mặc định rõ ràng, test có thể truyền Settings riêng.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta, timezone
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+ROOT = Path(__file__).resolve().parents[2]
+
+# Asia/Ho_Chi_Minh không có giờ mùa hè → +7 cố định (tránh phụ thuộc gói tzdata trên Windows).
+VN_TZ = timezone(timedelta(hours=7), "Asia/Ho_Chi_Minh")
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=ROOT / ".env", env_file_encoding="utf-8", extra="ignore")
+
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.5-flash"
+    database_url: str = "sqlite:///backend/data/app.db"
+
+    @property
+    def resolved_database_url(self) -> str:
+        """Đường dẫn SQLite tương đối được tính từ thư mục gốc dự án, không phụ thuộc chỗ đứng khi chạy lệnh."""
+        prefix = "sqlite:///"
+        if self.database_url.startswith(prefix) and not self.database_url.startswith(prefix + "/"):
+            path = Path(self.database_url.removeprefix(prefix))
+            if not path.is_absolute():
+                return prefix + (ROOT / path).as_posix()
+        return self.database_url
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+def now_vn() -> datetime:
+    return datetime.now(VN_TZ)
+
+
+def today_vn() -> date:
+    return now_vn().date()

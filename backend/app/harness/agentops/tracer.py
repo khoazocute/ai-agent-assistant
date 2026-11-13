@@ -81,6 +81,8 @@ class Tracer:
             print(f"  [OBSERVATION] {mark}{_short(str(d['output']), 300)}  ({d['latency_ms']} ms)")
         elif type_ == "run_end":
             u = d["usage"]
+            if d.get("error"):
+                print(f"  ❌ {_short(d['error'], 200)}")
             print(f"\n■ {d['status'].upper()} sau {d['steps']} bước · tổng tokens in={u.input_tokens} "
                   f"out={u.output_tokens} thinking={u.thinking_tokens}")
             if self.path:

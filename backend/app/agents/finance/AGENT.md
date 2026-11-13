@@ -1,5 +1,5 @@
 # Finance Agent — agent card
-> Spec cho **người đọc**. Model đọc `prompt.md` (viết ở bước 4).
+> Spec cho **người đọc**. Model đọc [`prompt.md`](prompt.md). Code: [`agent.py`](agent.py), [`tools.py`](tools.py).
 
 | Mục | Nội dung |
 |---|---|
@@ -8,7 +8,7 @@
 | Đầu ra | Câu trả lời tiếng Việt ngắn gọn + dữ liệu đã ghi vào DB |
 | Danh mục chi | ăn uống, di chuyển, mua sắm, giải trí, khác |
 | Danh mục thu | thu nhập, phụ cấp gia đình — trừ vào tổng chi → **chi ròng = chi − thu** |
-| Model / effort | `claude-opus-5-5` / `low` |
+| Model | `GEMINI_MODEL` (mặc định `gemini-3.5-flash`) — ADR-0002 |
 | Skills | `vn-money-parsing`, `expense-categorization`, `receipt-reading` (bước 17) |
 | Ngoài phạm vi | Tư vấn đầu tư, chuyển tiền, truy cập tài khoản ngân hàng |
 

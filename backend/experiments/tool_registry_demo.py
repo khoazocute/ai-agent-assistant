@@ -6,7 +6,7 @@ Ba phần:
   3. Run thật với Gemini: yêu cầu xoá dữ liệu → executor CHẶN vì risk=destructive, dù model muốn gọi.
 
 Chạy từ thư mục gốc dự án:
-    .\\.venv\\Scripts\\python.exe backend\\experiments\\step03_tool_registry.py
+    .\\.venv\\Scripts\\python.exe backend\\experiments\\tool_registry_demo.py
 """
 
 import json

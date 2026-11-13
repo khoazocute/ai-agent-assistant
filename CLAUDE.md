@@ -20,7 +20,9 @@ Không làm vượt bước; không thêm harness/thư viện trước khi bư�
 pip install -e "backend[dev]"
 pytest backend
 ruff check backend
+cd backend; python -m app.cli chat   # chat với Finance Agent (summary / list: không qua LLM)
 ```
+Gói Gemini miễn phí giới hạn ~20 request/ngày/model — chạy thử với LLM thật tiết kiệm; test dùng `tests/fakes.py`.
 
 ## Cấu trúc & quy tắc kiến trúc
 - `backend/app/harness/` — 7 harness, **không import** từ `agents/`, `services/`, `integrations/` (để tái sử dụng cho dự án khác).

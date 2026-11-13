@@ -6,7 +6,7 @@
 - `harness/tools/executor.py`: `ToolExecutor` — mọi lời gọi tool đi qua đúng một cửa: tra tool → kiểm tra rủi ro → validate tham số → chạy có timeout → rút gọn output → trace.
 - `react_loop.run_react` nhận `ToolExecutor` thay cho danh sách tool tự chế ở bước 2.
 - `tests/test_tools.py`: 13 test (schema, validate, enum, tham số thừa/thiếu, chặn tool `external`, timeout, cắt output).
-- `experiments/demo_tools.py` (tool demo dùng chung) + `experiments/step03_tool_registry.py`.
+- `experiments/demo_tools.py` (tool demo dùng chung) + `experiments/tool_registry_demo.py`.
 
 ## Kết quả chạy thật
 Schema model nhìn thấy — **không ai viết tay**, sinh từ `start: Annotated[date, Field(description=...)]`:

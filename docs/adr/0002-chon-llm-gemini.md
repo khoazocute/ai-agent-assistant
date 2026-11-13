@@ -28,5 +28,5 @@ Chọn **B**. Model mặc định `gemini-3.5-flash`, cấu hình qua `GEMINI_MO
 - Xem lại khi: có Claude key (thêm provider thứ hai vào `llm_client`), hoặc độ ổn định gói miễn phí ảnh hưởng tới eval/benchmark.
 
 ## Bằng chứng
-- Trace bước 1: `backend/data/step01_trace.json` (không commit).
+- Trace bước 1: `backend/data/traces/first_tool_call.json` (không commit).
 - Đo nhanh ngày 2026-11-13: `gemini-3.5-flash` ~2–3s/lượt khi không quá tải; `gemini-3.8-flash` trả 503; `gemini-2.5-flash/pro` trả 404 cho tài khoản mới.

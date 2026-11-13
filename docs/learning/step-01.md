@@ -3,7 +3,7 @@
 
 ## Đã làm
 - Đổi LLM từ Claude sang **Google Gemini** (`gemini-3.5-flash`, SDK `google-genai`) vì chưa có Anthropic key → [ADR-0002](../adr/0002-chon-llm-gemini.md).
-- Viết `backend/experiments/step01_first_tool_call.py`: **hai lượt gọi viết tay** (không vòng lặp) với một tool `get_current_time`, in từng phần Thought / Action / Observation / Text và lưu toàn bộ request/response vào `backend/data/step01_trace.json` (không commit).
+- Viết `backend/experiments/first_tool_call.py`: **hai lượt gọi viết tay** (không vòng lặp) với một tool `get_current_time`, in từng phần Thought / Action / Observation / Text và lưu toàn bộ request/response vào `backend/data/traces/first_tool_call.json` (không commit).
 - Thêm timeout 45s + retry có backoff cho lỗi tạm thời (429/500/503/504).
 
 ## Kết quả chạy thật
@@ -35,7 +35,7 @@
 3. Vì sao lỗi 503 nên thử lại, còn 404 (sai tên model) thì không?
 
 ## Bài tập
-Thêm tool thứ hai `get_weekday_vn` (trả về thứ trong tuần bằng tiếng Việt), đổi câu hỏi thành "Hôm nay thứ mấy?" và quan sát model chọn tool nào. Mở `backend/data/step01_trace.json` để xem chính xác những gì đã gửi đi.
+Thêm tool thứ hai `get_weekday_vn` (trả về thứ trong tuần bằng tiếng Việt), đổi câu hỏi thành "Hôm nay thứ mấy?" và quan sát model chọn tool nào. Mở `backend/data/traces/first_tool_call.json` để xem chính xác những gì đã gửi đi.
 
 ## Ghi chú / thắc mắc của tôi
 _(bạn tự điền)_

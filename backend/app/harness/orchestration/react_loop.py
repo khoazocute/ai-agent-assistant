@@ -16,7 +16,7 @@ from app.harness.orchestration.llm_client import LLMClient, ToolCall, Usage
 if TYPE_CHECKING:  # chỉ cần cho type hint; tránh import vòng tools ↔ orchestration lúc chạy
     from app.harness.tools.executor import ToolExecutor
 
-RunStatus = Literal["ok", "max_steps"]
+RunStatus = Literal["ok", "max_steps"]  # lỗi LLM → exception (trace ghi run_end status="error")
 
 
 @dataclass
@@ -37,20 +37,28 @@ def run_react(
     *,
     max_steps: int = 6,
     tracer: Tracer | None = None,
+    meta: dict[str, Any] | None = None,
 ) -> RunResult:
+    """`meta`: thông tin thêm ghi vào run_start (vd. agent, prompt_version) — để biết run dùng prompt nào."""
     tracer = tracer or Tracer()  # không truyền → không ghi đâu cả
     specs = executor.registry.specs()
     history: list[Any] = [llm.user_message(user_input)]
     usage = Usage()
     all_calls: list[ToolCall] = []
 
-    tracer.event("run_start", model=llm.model, input=user_input, system=system, tools=specs,
+    tracer.event("run_start", **(meta or {}), model=llm.model, input=user_input, system=system, tools=specs,
                  max_steps=max_steps)
 
     for step in range(1, max_steps + 1):
         # Ghi CHÍNH XÁC thứ được gửi đi (system + tools đã có ở run_start).
         tracer.event("llm_request", step=step, history=history)
-        resp = llm.generate(system, history, specs)
+        try:
+            resp = llm.generate(system, history, specs)
+        except Exception as e:
+            # Lỗi API sau khi đã retry (hết quota, 5xx kéo dài…): vẫn đóng run trong trace rồi mới ném lỗi
+            # lên — nếu không, trace có run_start mà không có run_end, không biết run đã chết ở đâu.
+            tracer.event("run_end", status="error", error=f"{type(e).__name__}: {e}", steps=step, usage=usage)
+            raise
         usage += resp.usage
         tracer.event("llm_response", step=step, thoughts=resp.thoughts, text=resp.text,
                      tool_calls=resp.tool_calls, usage=resp.usage, finish_reason=resp.finish_reason,

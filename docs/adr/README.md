@@ -6,7 +6,7 @@ Mẫu: [0000-template.md](0000-template.md). Quy trình: [ADR-0001](0001-dung-ad
 | [0001](0001-dung-adr.md) | Ghi lại quyết định kiến trúc bằng ADR | 0 | Accepted |
 | [0002](0002-chon-llm-gemini.md) | Dùng Google Gemini qua SDK `google-genai` (đổi từ Claude) | 1 | Accepted |
 | [0003](0003-tu-viet-vong-react.md) | Tự viết vòng ReAct (không AFC / LangGraph), `llm_client` trung lập provider, trace JSONL | 2 | Accepted |
-| 0004 | Tool là lớp mỏng bọc service | 4 | Dự kiến |
+| [0004](0004-tool-la-lop-mong-boc-service.md) | Tool là lớp mỏng bọc service; con số do code tính | 4 | Accepted |
 | 0005 | Phát triển theo eval, ngưỡng release prompt | 5 | Dự kiến |
 | 0006 | Tự lưu trace vào DB thay vì Langfuse/LangSmith | 6 | Dự kiến |
 | 0007 | Thuật toán xếp lịch xác định thay vì để LLM xếp | 7 | Dự kiến |

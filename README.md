@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_3%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_4%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -94,6 +94,7 @@ _Chưa chạy — sẽ có ở bước 9 (lần 1) và bước 19 (đầy đủ)
 | [0001](docs/adr/0001-dung-adr.md) | Ghi lại quyết định kiến trúc bằng ADR | Accepted |
 | [0002](docs/adr/0002-chon-llm-gemini.md) | Dùng Google Gemini qua SDK `google-genai` | Accepted |
 | [0003](docs/adr/0003-tu-viet-vong-react.md) | Tự viết vòng ReAct, `llm_client` trung lập provider, trace JSONL | Accepted |
+| [0004](docs/adr/0004-tool-la-lop-mong-boc-service.md) | Tool là lớp mỏng bọc service; con số do code tính | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
 
@@ -111,11 +112,20 @@ pytest backend
 ```
 Gemini API key lấy tại https://aistudio.google.com/apikey (điền `GEMINI_API_KEY` trong `.env`).
 
-Thử bước 1 (gọi Gemini với một tool):
+**Dùng Finance Agent ngay trên terminal** (chạy trong thư mục `backend`):
 ```powershell
-python backend\experiments\step01_first_tool_call.py
-python backend\experiments\step02_react_loop.py          # bước 2: vòng ReAct + trace
-python backend\experiments\step03_tool_registry.py       # bước 3: schema tự sinh, chặn tool rủi ro
+cd backend
+python -m app.cli chat              # nhắn: "trưa ăn phở 45k, đổ xăng 60k" · "tháng này tôi chi bao nhiêu?"
+python -m app.cli summary           # báo cáo tháng này — tính bằng code, không qua LLM
+python -m app.cli list              # giao dịch gần nhất
+```
+Dữ liệu lưu ở `backend/data/app.db` (SQLite, không commit).
+
+Các script học tập (`backend/experiments/`):
+```powershell
+python backend\experiments\first_tool_call.py
+python backend\experiments\react_loop_demo.py          # bước 2: vòng ReAct + trace
+python backend\experiments\tool_registry_demo.py       # bước 3: schema tự sinh, chặn tool rủi ro
 ```
 Hướng dẫn Google OAuth, Telegram bot token sẽ được bổ sung ở các bước tương ứng.
 
@@ -135,7 +145,7 @@ frontend/          website React (bước 13)
 |---|---|---|
 | 0. Chuẩn bị | 0 · Khung dự án, tài liệu nền, ADR-0001 | ✅ |
 | 1. Hiểu ReAct từ gốc | 1 · Gọi Gemini + 1 tool · 2 · Vòng ReAct + tracer · 3 · Tool registry + executor | ✅ |
-| 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ⬜ |
+| 2. Finance Agent | 4 · DB + service + CLI ✅ · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | 🔄 |
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ⬜ |
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ⬜ |
 | 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ⬜ |
