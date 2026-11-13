@@ -17,6 +17,8 @@ class HarnessBase(DeclarativeBase):
 def init_harness_tables(engine: Engine) -> None:
     # Import để các model đăng ký vào HarnessBase.metadata trước khi create_all.
     from app.harness.agentops import store  # noqa: F401
+    from app.harness.context import memory  # noqa: F401
+    from app.harness.evaluation import feedback  # noqa: F401
     from app.harness.governance import audit  # noqa: F401
     from app.harness.orchestration import approvals  # noqa: F401
 

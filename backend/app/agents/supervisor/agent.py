@@ -19,6 +19,7 @@ from pydantic import Field
 from app.agents.base import BaseAgent, ExecutorFactory
 from app.agents.email.agent import EmailAgent
 from app.agents.finance.agent import FinanceAgent
+from app.agents.memory_tools import build_memory_tools
 from app.agents.schedule.agent import ScheduleAgent
 from app.config import now_vn
 from app.db.session import SessionFactory
@@ -49,7 +50,8 @@ class SupervisorAgent(BaseAgent):
         self._tracer: Tracer | None = None
         self._child_usage = Usage()
         self._child_calls: list[ToolCall] = []
-        super().__init__(llm, load_prompt(PROMPT_PATH), self._build_tools(), make_executor, now)
+        registry = ToolRegistry.merge(self._build_tools(), build_memory_tools(session_factory))
+        super().__init__(llm, load_prompt(PROMPT_PATH), registry, make_executor, now)
 
     def _build_tools(self) -> ToolRegistry:
         # Sub-agent có thể chạy nhiều bước + retry khi Gemini quá tải → timeout dài hơn tool thường.

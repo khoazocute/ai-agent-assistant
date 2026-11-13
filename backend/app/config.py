@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///backend/data/app.db"
     fernet_key: str = ""  # mã hoá token OAuth (bước 10)
     default_agent: str = "supervisor"  # agent trả lời Telegram/web (ADR-0008)
+    telegram_bot_token: str = ""
+    telegram_allowed_chat_ids: str = ""  # danh sách chat_id, cách nhau bằng dấu phẩy
+    telegram_webhook_secret: str = ""
+
+    @property
+    def allowed_chat_ids(self) -> set[int]:
+        return {int(x) for x in self.telegram_allowed_chat_ids.replace(" ", "").split(",") if x}
 
     @property
     def resolved_database_url(self) -> str:

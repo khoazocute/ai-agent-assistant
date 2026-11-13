@@ -11,6 +11,7 @@ from app.agents.email.agent import PROMPT_PATH as EMAIL_PROMPT
 from app.agents.email.tools import build_email_tools
 from app.agents.finance.agent import PROMPT_PATH as FINANCE_PROMPT
 from app.agents.finance.tools import build_finance_tools
+from app.agents.memory_tools import build_memory_tools
 from app.agents.schedule.agent import PROMPT_PATH as SCHEDULE_PROMPT
 from app.agents.schedule.tools import build_schedule_tools
 from app.config import now_vn
@@ -37,5 +38,6 @@ class SingleAgent(BaseAgent):
                                  load_prompt(EMAIL_PROMPT))
         registry = ToolRegistry.merge(build_finance_tools(session_factory, today),
                                       build_schedule_tools(session_factory, now),
-                                      build_email_tools(session_factory, email_provider, now))
+                                      build_email_tools(session_factory, email_provider, now),
+                                      build_memory_tools(session_factory))
         super().__init__(llm, prompt, registry, make_executor, now)

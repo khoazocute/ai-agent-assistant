@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_11%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_12%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -101,6 +101,7 @@ _Chưa có số liệu: benchmark cần ~150 request (vượt gói Gemini miễn
 | [0008](docs/adr/0008-single-hay-multi-agent.md) | Single vs multi-agent quyết định bằng benchmark (chờ số liệu) | Proposed |
 | [0009](docs/adr/0009-email-la-du-lieu-khong-tin-cay.md) | Email là dữ liệu không tin cậy: bọc, gắn cờ, giới hạn tool, chặn gửi ở code | Accepted |
 | [0010](docs/adr/0010-thuc-thi-xac-dinh-sau-khi-duyet.md) | Policy-as-code + duyệt; duyệt xong code chạy đúng tham số đã lưu | Accepted |
+| [0011](docs/adr/0011-chien-luoc-memory-context.md) | Memory: 6 lượt chữ gần nhất + facts tra khi cần | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
 
@@ -138,6 +139,12 @@ python backend\experiments\first_tool_call.py
 python backend\experiments\react_loop_demo.py          # bước 2: vòng ReAct + trace
 python backend\experiments\tool_registry_demo.py       # bước 3: schema tự sinh, chặn tool rủi ro
 ```
+### Kết nối Telegram
+1. Nhắn [@BotFather](https://t.me/BotFather) → `/newbot` → đặt tên → nhận **token** → `.env`: `TELEGRAM_BOT_TOKEN=...`
+2. `cd backend; python -m app.integrations.telegram_bot` → nhắn `/start` cho bot → bot trả lời **chat_id** của bạn.
+3. `.env`: `TELEGRAM_ALLOWED_CHAT_IDS=<chat_id>` → chạy lại bot. Chỉ chat_id trong danh sách được dùng.
+4. Nhắn bình thường; yêu cầu rủi ro hiện nút ✅ Duyệt / ❌ Từ chối. Lệnh: `/approvals`, `/trace`, `/reset`.
+
 ### Kết nối Google (Gmail + Calendar)
 1. `pip install -e "backend[google]"`
 2. [Google Cloud Console](https://console.cloud.google.com/): tạo project → bật **Gmail API** và **Google Calendar API**.
@@ -167,7 +174,7 @@ frontend/          website React (bước 13)
 | 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ✅ |
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ✅ |
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ✅ |
-| 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ⬜ |
+| 5. Dùng thật | 12 · Telegram + memory ✅ · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | 🔄 |
 | 6. Mở rộng | 16 · Bản tin · 17 · Ảnh hóa đơn · 18 · Giọng nói | ⬜ |
 | 7. Hoàn thiện | 19 · Benchmark đầy đủ · 20 · Docker, CI, demo, playbook | ⬜ |
 
