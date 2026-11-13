@@ -17,6 +17,7 @@ from typing import Annotated, Any
 from pydantic import Field
 
 from app.agents.base import BaseAgent, ExecutorFactory
+from app.agents.email.agent import EmailAgent
 from app.agents.finance.agent import FinanceAgent
 from app.agents.schedule.agent import ScheduleAgent
 from app.config import now_vn
@@ -27,6 +28,7 @@ from app.harness.orchestration.llm_client import LLMClient, ToolCall, Usage
 from app.harness.orchestration.react_loop import RunResult
 from app.harness.tools.executor import ToolExecutor
 from app.harness.tools.registry import Risk, ToolRegistry, agent_tool
+from app.integrations.email_provider import EmailProvider
 
 PROMPT_PATH = Path(__file__).with_name("prompt.md")
 RequestArg = Annotated[str, Field(min_length=3, max_length=2000,
@@ -37,11 +39,12 @@ class SupervisorAgent(BaseAgent):
     name = "supervisor"
     max_steps = 6
 
-    def __init__(self, llm: LLMClient, session_factory: SessionFactory, now: Callable[[], datetime] = now_vn,
-                 make_executor: ExecutorFactory = ToolExecutor) -> None:
+    def __init__(self, llm: LLMClient, session_factory: SessionFactory, email_provider: EmailProvider,
+                 now: Callable[[], datetime] = now_vn, make_executor: ExecutorFactory = ToolExecutor) -> None:
         self.subs: dict[str, BaseAgent] = {
             "finance": FinanceAgent(llm, session_factory, now, make_executor),
             "schedule": ScheduleAgent(llm, session_factory, now, make_executor),
+            "email": EmailAgent(llm, session_factory, email_provider, now, make_executor),
         }
         self._tracer: Tracer | None = None
         self._child_usage = Usage()
@@ -60,7 +63,12 @@ class SupervisorAgent(BaseAgent):
             """Giao việc lịch cho Schedule Agent: tạo/dời/xem sự kiện, giờ trống, việc cần làm, xếp lịch."""
             return self._delegate("schedule", request)
 
-        return ToolRegistry([ask_finance_agent, ask_schedule_agent])
+        @agent_tool(risk=Risk.READ, timeout_s=300)
+        def ask_email_agent(request: RequestArg) -> dict[str, Any]:
+            """Giao việc email cho Email Agent: xem/tóm tắt/phân loại thư, soạn nháp, gửi (luôn qua duyệt)."""
+            return self._delegate("email", request)
+
+        return ToolRegistry([ask_finance_agent, ask_schedule_agent, ask_email_agent])
 
     def _delegate(self, name: str, request: str) -> dict[str, Any]:
         tracer = self._tracer.child() if self._tracer else None

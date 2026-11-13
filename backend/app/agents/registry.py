@@ -10,12 +10,26 @@ from app.config import now_vn
 from app.db.session import SessionFactory
 from app.harness.orchestration.llm_client import LLMClient
 from app.harness.tools.executor import ToolExecutor
+from app.integrations.email_provider import EmailProvider
 
-AGENT_NAMES = ("finance", "schedule", "single", "supervisor")
+AGENT_NAMES = ("finance", "schedule", "email", "single", "supervisor")
+
+
+def default_email_provider() -> EmailProvider:
+    """Gmail nếu đã đăng nhập; nếu chưa → provider báo lỗi rõ ràng (không âm thầm dùng hộp thư giả)."""
+    from app.integrations.email_provider import NotConnectedEmailProvider
+    from app.integrations.google_auth import is_connected, load_credentials
+
+    if is_connected():
+        from app.integrations.gmail_client import GmailProvider
+
+        return GmailProvider(load_credentials())
+    return NotConnectedEmailProvider()
 
 
 def build_agent(name: str, llm: LLMClient, session_factory: SessionFactory, now: Callable[[], datetime] = now_vn,
-                make_executor: ExecutorFactory = ToolExecutor) -> BaseAgent:
+                make_executor: ExecutorFactory = ToolExecutor,
+                email_provider: EmailProvider | None = None) -> BaseAgent:
     if name == "finance":
         from app.agents.finance.agent import FinanceAgent
 
@@ -24,12 +38,18 @@ def build_agent(name: str, llm: LLMClient, session_factory: SessionFactory, now:
         from app.agents.schedule.agent import ScheduleAgent
 
         return ScheduleAgent(llm, session_factory, now, make_executor)
+
+    provider = email_provider or default_email_provider()
+    if name == "email":
+        from app.agents.email.agent import EmailAgent
+
+        return EmailAgent(llm, session_factory, provider, now, make_executor)
     if name == "single":
         from app.agents.single.agent import SingleAgent
 
-        return SingleAgent(llm, session_factory, now, make_executor)
+        return SingleAgent(llm, session_factory, provider, now, make_executor)
     if name == "supervisor":
         from app.agents.supervisor.agent import SupervisorAgent
 
-        return SupervisorAgent(llm, session_factory, now, make_executor)
+        return SupervisorAgent(llm, session_factory, provider, now, make_executor)
     raise ValueError(f"Không có agent '{name}'. Có: {', '.join(AGENT_NAMES)}")

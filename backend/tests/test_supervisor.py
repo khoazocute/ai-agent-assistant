@@ -8,6 +8,7 @@ from app.harness.agentops.cost import Pricing
 from app.harness.agentops.store import DbTraceSink, child_runs, run_events
 from app.harness.agentops.tracer import Tracer
 from app.harness.orchestration.llm_client import ToolCall, Usage
+from app.integrations.email_provider import FakeEmailProvider
 from evals.run import EvalCase, run_case
 
 
@@ -20,7 +21,8 @@ def test_supervisor_delegates_and_links_child_runs(session_factory):
         "Đã ghi khoản ăn phở 45.000đ.",                                               # supervisor tổng hợp
     ])
     tracer = Tracer(sinks=[DbTraceSink(session_factory, Pricing())])
-    result = SupervisorAgent(llm, session_factory, now=lambda: NOW).run("trưa nay ăn phở 45k", tracer)
+    agent = SupervisorAgent(llm, session_factory, FakeEmailProvider(), now=lambda: NOW)
+    result = agent.run("trưa nay ăn phở 45k", tracer)
 
     assert result.status == "ok" and result.answer.startswith("Đã ghi")
     assert [c.name for c in result.tool_calls] == ["ask_finance_agent", "add_transaction"]
@@ -36,7 +38,8 @@ def test_supervisor_delegates_and_links_child_runs(session_factory):
 
 def test_sub_agent_only_sees_delegated_request_and_has_no_ask_tools(session_factory):
     llm = FakeLLM([[ToolCall("s", "ask_schedule_agent", {"request": "chiều mai 3h họp nhóm"})], "ok", "ok"])
-    SupervisorAgent(llm, session_factory, now=lambda: NOW).run("trưa ăn phở 45k, chiều mai 3h họp nhóm")
+    SupervisorAgent(llm, session_factory, FakeEmailProvider(), now=lambda: NOW).run(
+        "trưa ăn phở 45k, chiều mai 3h họp nhóm")
     sub_first_message = llm.seen_histories[1][0]["text"]
     assert sub_first_message.endswith("chiều mai 3h họp nhóm") and "phở" not in sub_first_message
     assert not any(t.name.startswith("ask_") for t in llm.seen_tools[1])  # độ sâu ủy quyền = 1

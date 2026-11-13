@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import JSON, CheckConstraint, ForeignKey, String
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.config import now_vn
@@ -104,3 +104,40 @@ class SchedulePlan(Base):
     items: Mapped[list[dict]] = mapped_column(JSON)  # [{task_id, title, start, end}]
     unscheduled: Mapped[list[dict]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None))
+
+
+# ---------- Email (bước 10) ----------
+# Nội dung email là DỮ LIỆU KHÔNG TIN CẬY: lưu nguyên văn, chỉ bọc <untrusted_content> khi đưa cho model.
+
+
+class Email(Base):
+    __tablename__ = "emails"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    provider_id: Mapped[str] = mapped_column(String(200), unique=True)
+    thread_id: Mapped[str] = mapped_column(String(200), default="")
+    message_id_header: Mapped[str] = mapped_column(String(500), default="")
+    from_addr: Mapped[str] = mapped_column(String(500))
+    to_addrs: Mapped[str] = mapped_column(String(2000), default="")
+    subject: Mapped[str] = mapped_column(String(1000), default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    received_at: Mapped[datetime] = mapped_column(index=True)
+    category: Mapped[str | None] = mapped_column(String(20))  # important | needs_reply | newsletter | other
+    summary: Mapped[str] = mapped_column(String(1000), default="")
+    injection_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    fetched_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None))
+
+
+class EmailDraft(Base):
+    __tablename__ = "email_drafts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    to_addrs: Mapped[str] = mapped_column(String(2000))
+    subject: Mapped[str] = mapped_column(String(1000))
+    body: Mapped[str] = mapped_column(Text)
+    reply_to_email_id: Mapped[int | None] = mapped_column(ForeignKey("emails.id", ondelete="SET NULL"))
+    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)  # draft | sent | discarded
+    pii_warnings: Mapped[list[str]] = mapped_column(JSON, default=list)
+    provider_message_id: Mapped[str | None] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None))
+    sent_at: Mapped[datetime | None]

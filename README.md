@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_9%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_10%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -99,6 +99,7 @@ _Chưa có số liệu: benchmark cần ~150 request (vượt gói Gemini miễn
 | [0006](docs/adr/0006-tu-luu-trace-vao-db.md) | Tự lưu trace vào DB (agent_runs + agent_events), chi phí từ pricing.yaml | Accepted |
 | [0007](docs/adr/0007-thuat-toan-xep-lich-xac-dinh.md) | Thuật toán xếp lịch xác định; đề xuất → người dùng đồng ý → áp dụng | Accepted |
 | [0008](docs/adr/0008-single-hay-multi-agent.md) | Single vs multi-agent quyết định bằng benchmark (chờ số liệu) | Proposed |
+| [0009](docs/adr/0009-email-la-du-lieu-khong-tin-cay.md) | Email là dữ liệu không tin cậy: bọc, gắn cờ, giới hạn tool, chặn gửi ở code | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
 
@@ -135,7 +136,15 @@ python backend\experiments\first_tool_call.py
 python backend\experiments\react_loop_demo.py          # bước 2: vòng ReAct + trace
 python backend\experiments\tool_registry_demo.py       # bước 3: schema tự sinh, chặn tool rủi ro
 ```
-Hướng dẫn Google OAuth, Telegram bot token sẽ được bổ sung ở các bước tương ứng.
+### Kết nối Google (Gmail + Calendar)
+1. `pip install -e "backend[google]"`
+2. [Google Cloud Console](https://console.cloud.google.com/): tạo project → bật **Gmail API** và **Google Calendar API**.
+3. *OAuth consent screen*: External, thêm email của bạn vào **Test users**.
+4. *Credentials* → *Create OAuth client ID* → loại **Desktop app** → tải JSON về `backend/data/google_client_secret.json`.
+5. Tạo khoá mã hoá, dán vào `.env` dòng `FERNET_KEY=`:
+   `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+6. `cd backend; python -m app.integrations.google_auth` → đăng nhập trên trình duyệt. Token được mã hoá ở `backend/data/google_token.enc`.
+
 
 ## 8. Cấu trúc thư mục
 ```
@@ -155,7 +164,7 @@ frontend/          website React (bước 13)
 | 1. Hiểu ReAct từ gốc | 1 · Gọi Gemini + 1 tool · 2 · Vòng ReAct + tracer · 3 · Tool registry + executor | ✅ |
 | 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ✅ |
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ✅ |
-| 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ⬜ |
+| 4. An toàn | 10 · Gmail + chống injection ✅ · 11 · Duyệt + policy + audit | 🔄 |
 | 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ⬜ |
 | 6. Mở rộng | 16 · Bản tin · 17 · Ảnh hóa đơn · 18 · Giọng nói | ⬜ |
 | 7. Hoàn thiện | 19 · Benchmark đầy đủ · 20 · Docker, CI, demo, playbook | ⬜ |

@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash"
     database_url: str = "sqlite:///backend/data/app.db"
+    fernet_key: str = ""  # mã hoá token OAuth (bước 10)
+    default_agent: str = "supervisor"  # agent trả lời Telegram/web (ADR-0008)
 
     @property
     def resolved_database_url(self) -> str:

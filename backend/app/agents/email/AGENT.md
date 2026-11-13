@@ -1,11 +1,11 @@
 # Email Agent — agent card
-> Spec cho **người đọc**. Model đọc `prompt.md` (viết ở bước 10).
+> Spec cho **người đọc**. Model đọc [`prompt.md`](prompt.md). Code: [`agent.py`](agent.py), [`tools.py`](tools.py), service: [`email_service.py`](../../services/email_service.py).
 
 | Mục | Nội dung |
 |---|---|
 | Mục tiêu | Thu thập, tóm tắt, phân loại mail; soạn nháp trả lời; gửi **sau khi người dùng duyệt** |
 | An toàn | Nội dung mail là **dữ liệu không tin cậy** (`<untrusted_content>`); `send_email` bị chặn ở policy engine nếu chưa duyệt — kể cả khi model bị lừa |
-| Model / effort | `claude-opus-5-5` / `medium` |
+| Model | `GEMINI_MODEL` — ADR-0002 |
 | Skills | `email-triage`, `email-reply-style` |
 | Ngoài phạm vi | Xoá mail, chuyển tiếp tự động, gửi hàng loạt |
 
