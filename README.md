@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_1%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_2%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -58,7 +58,28 @@ Mọi agent được bao quanh bởi **7 harness**:
 Chi tiết: [PLAN.md](PLAN.md) · [docs/02-architecture.md](docs/02-architecture.md)
 
 ## 4. Một yêu cầu được xử lý thế nào?
-_Sẽ bổ sung ví dụ trace thật (Thought → Action → Observation) ở bước 2._
+Mỗi yêu cầu chạy qua **vòng ReAct** ([react_loop.py](backend/app/harness/orchestration/react_loop.py)): model suy nghĩ (Thought) → đề nghị gọi tool (Action) → **code của mình** chạy tool và gửi kết quả lại (Observation) → lặp tới khi model trả lời xong hoặc chạm giới hạn bước. Mọi bước được ghi vào trace JSONL.
+
+Trace thật (bước 2, `gemini-3.5-flash`):
+```
+USER: Hôm nay là ngày mấy? Còn bao nhiêu ngày nữa đến Tết Dương lịch 2027, và nếu từ hôm nay
+      mỗi ngày tôi tiết kiệm 85k thì đến hôm đó tôi có bao nhiêu tiền?
+
+── Bước 1 · 2979 ms · tokens in=316
+  [THOUGHT]     …First, I need to pinpoint today's date… then days until January 1st, 2027…
+  [ACTION]      get_current_time({})
+  [OBSERVATION] Friday 13/11/2026 21:42 (Asia/Ho_Chi_Minh)
+── Bước 2 · 2854 ms · tokens in=745
+  [ACTION]      days_between({"start": "2026-11-13", "end": "2027-01-01"})
+  [OBSERVATION] 49
+── Bước 3 · 2089 ms · tokens in=1116
+  [ACTION]      calculate({"expression": "49 * 85000"})
+  [OBSERVATION] 4165000
+── Bước 4 · 3942 ms · tokens in=1325
+  [ANSWER]      Hôm nay là ngày 13/11/2026. Còn 49 ngày nữa là đến Tết Dương lịch 2027 (01/01/2027).
+                Nếu mỗi ngày tiết kiệm 85.000đ, đến hôm đó bạn sẽ có 4.165.000đ.
+■ OK sau 4 bước · tổng tokens in=3502 out=156 thinking=544
+```
 
 ## 5. Kết quả benchmark
 So sánh **single-agent vs multi-agent** về chất lượng, độ trễ, chi phí. Bảng dưới được **sinh tự động** bởi `backend/benchmarks/report.py` — không điền tay.
@@ -72,6 +93,7 @@ _Chưa chạy — sẽ có ở bước 9 (lần 1) và bước 19 (đầy đủ)
 |---|---|---|
 | [0001](docs/adr/0001-dung-adr.md) | Ghi lại quyết định kiến trúc bằng ADR | Accepted |
 | [0002](docs/adr/0002-chon-llm-gemini.md) | Dùng Google Gemini qua SDK `google-genai` | Accepted |
+| [0003](docs/adr/0003-tu-viet-vong-react.md) | Tự viết vòng ReAct, `llm_client` trung lập provider, trace JSONL | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
 
@@ -92,6 +114,7 @@ Gemini API key lấy tại https://aistudio.google.com/apikey (điền `GEMINI_A
 Thử bước 1 (gọi Gemini với một tool):
 ```powershell
 python backend\experiments\step01_first_tool_call.py
+python backend\experiments\step02_react_loop.py          # bước 2: vòng ReAct + trace
 ```
 Hướng dẫn Google OAuth, Telegram bot token sẽ được bổ sung ở các bước tương ứng.
 
@@ -110,7 +133,7 @@ frontend/          website React (bước 13)
 | Giai đoạn | Bước | Trạng thái |
 |---|---|---|
 | 0. Chuẩn bị | 0 · Khung dự án, tài liệu nền, ADR-0001 | ✅ |
-| 1. Hiểu ReAct từ gốc | 1 · Gọi Gemini + 1 tool ✅ · 2 · Vòng ReAct + tracer · 3 · Tool registry | 🔄 |
+| 1. Hiểu ReAct từ gốc | 1 · Gọi Gemini + 1 tool ✅ · 2 · Vòng ReAct + tracer ✅ · 3 · Tool registry | 🔄 |
 | 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ⬜ |
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ⬜ |
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ⬜ |
