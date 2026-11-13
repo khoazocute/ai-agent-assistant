@@ -32,8 +32,12 @@ def make_engine(url: str) -> Engine:
     )
 
     @event.listens_for(engine, "connect")
-    def _enable_foreign_keys(dbapi_conn, _record):  # SQLite mặc định TẮT kiểm tra khoá ngoại
-        dbapi_conn.execute("PRAGMA foreign_keys=ON")
+    def _sqlite_pragmas(dbapi_conn, _record):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON")  # SQLite mặc định TẮT kiểm tra khoá ngoại
+        if not in_memory:
+            # WAL: đọc không chặn ghi; busy_timeout: web + Telegram + job ghi cùng lúc thì chờ thay vì lỗi ngay.
+            dbapi_conn.execute("PRAGMA journal_mode=WAL")
+            dbapi_conn.execute("PRAGMA busy_timeout=10000")
 
     return engine
 

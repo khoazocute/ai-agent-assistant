@@ -14,8 +14,8 @@ Mẫu: [0000-template.md](0000-template.md). Quy trình: [ADR-0001](0001-dung-ad
 | [0009](0009-email-la-du-lieu-khong-tin-cay.md) | Email là dữ liệu không tin cậy; chống prompt injection nhiều lớp | 10 | Accepted |
 | [0010](0010-thuc-thi-xac-dinh-sau-khi-duyet.md) | Policy-as-code + duyệt; sau khi duyệt thực thi xác định, không gọi lại LLM | 11 | Accepted |
 | [0011](0011-chien-luoc-memory-context.md) | Chiến lược memory & context: 6 lượt chữ gần nhất + facts tra khi cần | 12 | Accepted |
-| 0012 | FastAPI + React; SQLite khi học, PostgreSQL khi chạy thật | 13 | Dự kiến |
+| [0012](0012-fastapi-react-sqlite.md) | FastAPI + React cùng domain; SQLite khi học, PostgreSQL khi chạy thật | 13 | Accepted |
 | 0013 | Lịch lưu DB + đồng bộ Google Calendar | 15 | Dự kiến |
 | 0014 | Workflow thay cho agent cho bản tin và đọc hóa đơn | 16 | Dự kiến |
 | 0015 | Speech-to-text local bằng faster-whisper | 18 | Dự kiến |
-| — | SSE cho cập nhật realtime (thay vì WebSocket/polling) | 14 | Dự kiến |
+| [0016](0016-sse-cap-nhat-realtime.md) | SSE cho cập nhật realtime (thay vì WebSocket/polling) | 14 | Accepted |

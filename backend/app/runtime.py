@@ -21,6 +21,7 @@ from app.harness.orchestration.llm_client import LLMClient
 from app.harness.tools.executor import ToolExecutor
 from app.harness.tools.registry import RegisteredTool, ToolRegistry
 from app.integrations.email_provider import EmailProvider
+from app.realtime import EventBus, install_change_listener
 
 
 @dataclass
@@ -31,6 +32,7 @@ class Runtime:
     approvals: ApprovalStore
     email_provider: EmailProvider
     _llm: LLMClient | None = field(default=None, repr=False)
+    bus: EventBus = field(default_factory=EventBus)
 
     @classmethod
     def create(cls, db_url: str | None = None, email_provider: EmailProvider | None = None,
@@ -41,7 +43,9 @@ class Runtime:
         policy = PolicyProvider(CONFIG_DIR / "policies.yaml")
         audit = AuditLog(factory)
         approvals = ApprovalStore(factory, audit, ttl_hours=policy.get().approval_ttl_hours)
-        return cls(factory, policy, audit, approvals, email_provider or default_email_provider(), llm)
+        rt = cls(factory, policy, audit, approvals, email_provider or default_email_provider(), llm)
+        install_change_listener(factory, rt.bus)  # mọi commit DB → sự kiện realtime cho website
+        return rt
 
     @property
     def llm(self) -> LLMClient:

@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_12%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_14%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -102,6 +102,8 @@ _Chưa có số liệu: benchmark cần ~150 request (vượt gói Gemini miễn
 | [0009](docs/adr/0009-email-la-du-lieu-khong-tin-cay.md) | Email là dữ liệu không tin cậy: bọc, gắn cờ, giới hạn tool, chặn gửi ở code | Accepted |
 | [0010](docs/adr/0010-thuc-thi-xac-dinh-sau-khi-duyet.md) | Policy-as-code + duyệt; duyệt xong code chạy đúng tham số đã lưu | Accepted |
 | [0011](docs/adr/0011-chien-luoc-memory-context.md) | Memory: 6 lượt chữ gần nhất + facts tra khi cần | Accepted |
+| [0012](docs/adr/0012-fastapi-react-sqlite.md) | FastAPI + React cùng domain; cookie httpOnly; SQLite → PostgreSQL | Accepted |
+| [0016](docs/adr/0016-sse-cap-nhat-realtime.md) | SSE + listener after_commit cho cập nhật realtime | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
 
@@ -139,6 +141,15 @@ python backend\experiments\first_tool_call.py
 python backend\experiments\react_loop_demo.py          # bước 2: vòng ReAct + trace
 python backend\experiments\tool_registry_demo.py       # bước 3: schema tự sinh, chặn tool rủi ro
 ```
+### Chạy website
+1. `.env`: `WEB_PASSWORD=<mật khẩu>` và `JWT_SECRET=<chuỗi ngẫu nhiên ≥ 32 ký tự>`
+   (tạo: `python -c "import secrets; print(secrets.token_urlsafe(48))"`)
+2. Build giao diện (cần Node 20+): `cd frontend; npm install; npm run build`
+3. Chạy: `cd backend; uvicorn app.main:app --reload` → mở http://localhost:8000
+4. Muốn Telegram cập nhật web realtime: `.env` `TELEGRAM_MODE=polling` → bot chạy chung tiến trình web (không cần chạy bot riêng).
+
+Khi sửa giao diện: `cd frontend; npm run dev` → http://localhost:5173 (tự proxy `/api` sang :8000).
+
 ### Kết nối Telegram
 1. Nhắn [@BotFather](https://t.me/BotFather) → `/newbot` → đặt tên → nhận **token** → `.env`: `TELEGRAM_BOT_TOKEN=...`
 2. `cd backend; python -m app.integrations.telegram_bot` → nhắn `/start` cho bot → bot trả lời **chat_id** của bạn.
@@ -174,7 +185,7 @@ frontend/          website React (bước 13)
 | 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ✅ |
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ✅ |
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ✅ |
-| 5. Dùng thật | 12 · Telegram + memory ✅ · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | 🔄 |
+| 5. Dùng thật | 12 · Telegram + memory ✅ · 13 · Web ✅ · 14 · Trace UI + realtime ✅ · 15 · GCal | 🔄 |
 | 6. Mở rộng | 16 · Bản tin · 17 · Ảnh hóa đơn · 18 · Giọng nói | ⬜ |
 | 7. Hoàn thiện | 19 · Benchmark đầy đủ · 20 · Docker, CI, demo, playbook | ⬜ |
 

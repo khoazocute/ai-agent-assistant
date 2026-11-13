@@ -1,7 +1,10 @@
-# frontend/ — website (bước 13)
-Vite + React + TypeScript + TanStack Query + FullCalendar + Recharts.
+# frontend/ — website (Vite + React + TypeScript)
+TanStack Query (dữ liệu) · FullCalendar (lịch) · Recharts (biểu đồ) · SSE (`/api/stream`, realtime).
 
-Trang dự kiến: Tổng quan · Chi tiêu · Lịch · Email & Duyệt · Agent Runs (trace) · Prompts · AgentOps · Cài đặt · Chat.
-Cập nhật realtime qua Server-Sent Events (`/api/events`, bước 14).
+Trang: Tổng quan · Chat · Chi tiêu · Lịch · Email & Duyệt · Agent Runs (trace từng bước) · AgentOps.
 
-Bản mô phỏng giao diện đã có trên canvas thiết kế (xem PLAN.md).
+```powershell
+npm install
+npm run dev      # http://localhost:5173 — /api được proxy sang FastAPI ở :8000
+npm run build    # tạo dist/ — FastAPI tự phục vụ ở http://localhost:8000 (cùng domain)
+```

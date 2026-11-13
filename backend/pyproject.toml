@@ -16,6 +16,9 @@ dependencies = [
     "sqlalchemy>=2",      # bước 4: DB (SQLite khi học, PostgreSQL khi chạy thật)
     "pyyaml",             # bước 5: ca eval (sau này: policies.yaml)
     "python-telegram-bot>=21",  # bước 12: bot Telegram (polling khi dev, webhook khi chạy thật)
+    "fastapi",            # bước 13: web API
+    "uvicorn[standard]",
+    "pyjwt",              # bước 13: phiên đăng nhập web (cookie httpOnly)
 ]
 
 [project.optional-dependencies]
@@ -43,3 +46,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dùng Depends(...) làm giá trị mặc định theo thiết kế — không phải lỗi B008.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header"]

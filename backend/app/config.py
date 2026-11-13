@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_allowed_chat_ids: str = ""  # danh sách chat_id, cách nhau bằng dấu phẩy
     telegram_webhook_secret: str = ""
+    web_password: str = ""  # mật khẩu đăng nhập website (một chủ sở hữu)
+    jwt_secret: str = ""  # ≥ 32 ký tự ngẫu nhiên
+    cookie_secure: bool = False  # True khi chạy HTTPS (production)
+    # Chạy bot Telegram NGAY TRONG tiến trình web: off | polling (dev) | webhook (production, bước 20)
+    telegram_mode: str = "off"
+    public_base_url: str = ""  # https://ten-mien-cua-ban — cần cho webhook Telegram
 
     @property
     def allowed_chat_ids(self) -> set[int]:
