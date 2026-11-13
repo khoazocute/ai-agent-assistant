@@ -10,6 +10,7 @@
     python -m app.cli approvals          yêu cầu đang chờ duyệt · approve <id> · reject <id>
     python -m app.cli audit [n]          nhật ký audit: ai đã làm gì
     python -m app.cli gcal-sync          đồng bộ hai chiều với Google Calendar
+    python -m app.cli brief morning|evening [--send]   tạo bản tin (in ra; --send gửi Telegram)
 """
 
 from __future__ import annotations
@@ -220,6 +221,20 @@ def cmd_gcal_sync() -> None:
           + (" (đồng bộ lại toàn bộ)" if report.full_resync else ""))
 
 
+def cmd_brief(kind: str, send: bool) -> None:
+    import asyncio
+
+    from app.jobs.scheduler import Jobs
+    from app.notify import LogNotifier, default_notifier
+    from app.runtime import Runtime
+
+    notifier = default_notifier() if send else LogNotifier()
+    text = asyncio.run(Jobs(Runtime.create(), notifier).brief(kind))
+    print(text)
+    if send:
+        print("\n(đã gửi qua Telegram nếu ngoài giờ yên lặng 22:30–06:30)")
+
+
 def main() -> None:
     from app.agents.registry import AGENT_NAMES
     from app.services.finance_service import Period
@@ -243,6 +258,9 @@ def main() -> None:
     sub.add_parser("reject", help="từ chối").add_argument("id", type=int)
     sub.add_parser("audit", help="nhật ký audit").add_argument("limit", nargs="?", type=int, default=30)
     sub.add_parser("gcal-sync", help="đồng bộ Google Calendar")
+    brief = sub.add_parser("brief", help="bản tin sáng/tối")
+    brief.add_argument("kind", choices=["morning", "evening"])
+    brief.add_argument("--send", action="store_true")
 
     args = parser.parse_args()
     match args.command:
@@ -268,6 +286,8 @@ def main() -> None:
             cmd_audit(args.limit)
         case "gcal-sync":
             cmd_gcal_sync()
+        case "brief":
+            cmd_brief(args.kind, args.send)
 
 
 if __name__ == "__main__":

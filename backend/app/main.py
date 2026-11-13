@@ -34,7 +34,10 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
         rt = app.state.runtime = runtime or Runtime.create()
         rt.bus.bind(asyncio.get_running_loop())
         bot = await _start_telegram(rt)
+        scheduler = _start_jobs(rt)
         yield
+        if scheduler is not None:
+            scheduler.shutdown(wait=False)
         if bot is not None:
             await _stop_telegram(bot)
 
@@ -98,6 +101,22 @@ async def _start_telegram(rt: Runtime):
     await bot.updater.start_polling(drop_pending_updates=True)
     log.info("Telegram bot đang chạy (polling) trong tiến trình web")
     return bot
+
+
+def _start_jobs(rt: Runtime):
+    if runtime_is_test(rt) or not get_settings().jobs_enabled:
+        return None
+    from app.jobs.scheduler import Jobs, build_scheduler
+    from app.notify import default_notifier
+
+    scheduler = build_scheduler(Jobs(rt, default_notifier()))
+    scheduler.start()
+    log.info("Job nền đã chạy: %s", [j.id for j in scheduler.get_jobs()])
+    return scheduler
+
+
+def runtime_is_test(rt: Runtime) -> bool:
+    return str(rt.session_factory.kw["bind"].url) == "sqlite://"
 
 
 async def _stop_telegram(bot) -> None:

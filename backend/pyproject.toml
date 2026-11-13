@@ -19,6 +19,7 @@ dependencies = [
     "fastapi",            # bước 13: web API
     "uvicorn[standard]",
     "pyjwt",              # bước 13: phiên đăng nhập web (cookie httpOnly)
+    "apscheduler>=3.10,<4",  # bước 16: job nền (bản tin, nhắc lịch, đồng bộ, dọn dữ liệu)
 ]
 
 [project.optional-dependencies]

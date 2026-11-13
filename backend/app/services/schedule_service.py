@@ -120,6 +120,8 @@ class ScheduleService:
         # Dời giờ bắt đầu mà không nói giờ kết thúc → giữ nguyên thời lượng.
         new_end = to_local(end_at) if end_at else new_start + (e.end_at - e.start_at)
         self._validate_range(new_start, new_end)
+        if new_start != e.start_at:
+            e.reminded_at = None  # dời giờ → nhắc lại theo giờ mới
         e.start_at, e.end_at = new_start, new_end
         if title is not None:
             e.title = title.strip()

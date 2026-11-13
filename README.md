@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_15%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_16%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -104,6 +104,7 @@ _Chưa có số liệu: benchmark cần ~150 request (vượt gói Gemini miễn
 | [0011](docs/adr/0011-chien-luoc-memory-context.md) | Memory: 6 lượt chữ gần nhất + facts tra khi cần | Accepted |
 | [0012](docs/adr/0012-fastapi-react-sqlite.md) | FastAPI + React cùng domain; cookie httpOnly; SQLite → PostgreSQL | Accepted |
 | [0013](docs/adr/0013-lich-db-dong-bo-google-calendar.md) | Lịch trong DB + đồng bộ hai chiều Google Calendar | Accepted |
+| [0014](docs/adr/0014-workflow-cho-ban-tin-va-hoa-don.md) | Workflow (1 lượt LLM, có mẫu dự phòng) cho bản tin và hóa đơn | Accepted |
 | [0016](docs/adr/0016-sse-cap-nhat-realtime.md) | SSE + listener after_commit cho cập nhật realtime | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
@@ -188,7 +189,7 @@ frontend/          website React (bước 13)
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ✅ |
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ✅ |
 | 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ✅ |
-| 6. Mở rộng | 16 · Bản tin · 17 · Ảnh hóa đơn · 18 · Giọng nói | ⬜ |
+| 6. Mở rộng | 16 · Bản tin ✅ · 17 · Ảnh hóa đơn · 18 · Giọng nói | 🔄 |
 | 7. Hoàn thiện | 19 · Benchmark đầy đủ · 20 · Docker, CI, demo, playbook | ⬜ |
 
 Nhật ký học từng bước: [docs/learning/](docs/learning/)

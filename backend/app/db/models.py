@@ -74,6 +74,7 @@ class Event(Base):
     gcal_event_id: Mapped[str | None] = mapped_column(String(200), unique=True)  # bước 15
     etag: Mapped[str | None] = mapped_column(String(200))
     synced_at: Mapped[datetime | None]  # lần cuối khớp với Google; NULL = có thay đổi local chưa đẩy lên
+    reminded_at: Mapped[datetime | None]  # đã nhắc qua Telegram lúc nào (bước 16); NULL = chưa nhắc
     updated_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None),
                                                  onupdate=lambda: now_vn().replace(tzinfo=None))
 

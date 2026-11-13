@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # Chạy bot Telegram NGAY TRONG tiến trình web: off | polling (dev) | webhook (production, bước 20)
     telegram_mode: str = "off"
     public_base_url: str = ""  # https://ten-mien-cua-ban — cần cho webhook Telegram
+    jobs_enabled: bool = True  # chạy job nền (bản tin, nhắc lịch, đồng bộ) trong tiến trình web
 
     @property
     def allowed_chat_ids(self) -> set[int]:

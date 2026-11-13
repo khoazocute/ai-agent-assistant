@@ -124,6 +124,18 @@ def run_events(session_factory: sessionmaker, run_id: str) -> tuple[AgentRun | N
         return run, events
 
 
+def purge_runs_before(session_factory: sessionmaker, cutoff: datetime) -> int:
+    """Chính sách lưu trữ: xoá run (và sự kiện của nó) cũ hơn `cutoff` — trace chứa dữ liệu cá nhân."""
+    from sqlalchemy import delete
+
+    with session_factory() as s, s.begin():
+        old = list(s.scalars(select(AgentRun.run_id).where(AgentRun.started_at < cutoff)))
+        if old:
+            s.execute(delete(AgentEvent).where(AgentEvent.run_id.in_(old)))
+            s.execute(delete(AgentRun).where(AgentRun.run_id.in_(old)))
+        return len(old)
+
+
 def child_runs(session_factory: sessionmaker, run_id: str) -> list[AgentRun]:
     with session_factory() as s:
         return list(s.scalars(select(AgentRun).where(AgentRun.parent_run_id == run_id)
