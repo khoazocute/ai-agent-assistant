@@ -33,6 +33,7 @@ class Runtime:
     email_provider: EmailProvider
     _llm: LLMClient | None = field(default=None, repr=False)
     bus: EventBus = field(default_factory=EventBus)
+    _calendar: Any = field(default=None, repr=False)
 
     @classmethod
     def create(cls, db_url: str | None = None, email_provider: EmailProvider | None = None,
@@ -78,6 +79,26 @@ class Runtime:
                                     build_schedule_tools(self.session_factory),
                                     build_email_tools(self.session_factory, self.email_provider))
         return {t.name: t for t in merged.tools()}
+
+    def calendar_provider(self):
+        """Google Calendar nếu đã đăng nhập Google, ngược lại None (tính năng đồng bộ tắt)."""
+        from app.integrations.google_auth import is_connected, load_credentials
+
+        if self._calendar is None and is_connected():
+            from app.integrations.gcal_client import GoogleCalendarProvider
+
+            self._calendar = GoogleCalendarProvider(load_credentials())
+        return self._calendar
+
+    def sync_calendar(self):
+        from app.db.session import session_scope
+        from app.services.calendar_sync import CalendarSync
+
+        provider = self.calendar_provider()
+        if provider is None:
+            raise RuntimeError("Chưa kết nối Google. Chạy `python -m app.integrations.google_auth` (xem README).")
+        with session_scope(self.session_factory) as s:
+            return CalendarSync(s, provider).run()
 
     def approve(self, action_id: int, actor: str) -> PendingAction:
         return self.approvals.approve(action_id, actor, self.tool_catalog())

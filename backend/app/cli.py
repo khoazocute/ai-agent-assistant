@@ -9,6 +9,7 @@
     python -m app.cli stats              thống kê theo agent: thành công, p50/p95, token, chi phí
     python -m app.cli approvals          yêu cầu đang chờ duyệt · approve <id> · reject <id>
     python -m app.cli audit [n]          nhật ký audit: ai đã làm gì
+    python -m app.cli gcal-sync          đồng bộ hai chiều với Google Calendar
 """
 
 from __future__ import annotations
@@ -207,12 +208,24 @@ def cmd_audit(limit: int) -> None:
               f"{json.dumps(e.detail, ensure_ascii=False)[:90]}")
 
 
+def cmd_gcal_sync() -> None:
+    from app.runtime import Runtime
+
+    try:
+        report = Runtime.create().sync_calendar()
+    except RuntimeError as e:
+        sys.exit(f"⚠ {e}")
+    print("Đẩy lên Google: " f"+{report.pushed_new} mới, {report.pushed_updates} sửa, {report.pushed_deletes} xoá")
+    print("Kéo về:         " f"+{report.pulled_new} mới, {report.pulled_updates} sửa, {report.pulled_deletes} xoá"
+          + (" (đồng bộ lại toàn bộ)" if report.full_resync else ""))
+
+
 def main() -> None:
     from app.agents.registry import AGENT_NAMES
     from app.services.finance_service import Period
 
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stdin.reconfigure(encoding="utf-8")
+    for stream in (sys.stdout, sys.stderr, sys.stdin):  # console Windows mặc định không phải UTF-8
+        stream.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
     chat = sub.add_parser("chat", help="chat với agent")
@@ -229,6 +242,7 @@ def main() -> None:
     sub.add_parser("approve", help="duyệt + thực hiện").add_argument("id", type=int)
     sub.add_parser("reject", help="từ chối").add_argument("id", type=int)
     sub.add_parser("audit", help="nhật ký audit").add_argument("limit", nargs="?", type=int, default=30)
+    sub.add_parser("gcal-sync", help="đồng bộ Google Calendar")
 
     args = parser.parse_args()
     match args.command:
@@ -252,6 +266,8 @@ def main() -> None:
             cmd_decide(args.id, approve=args.command == "approve")
         case "audit":
             cmd_audit(args.limit)
+        case "gcal-sync":
+            cmd_gcal_sync()
 
 
 if __name__ == "__main__":

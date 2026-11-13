@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import VN_TZ, now_vn
-from app.db.models import Event, SchedulePlan, Task, TaskStatus
+from app.db.models import CalendarTombstone, Event, SchedulePlan, Task, TaskStatus
 from app.services.planner import DEFAULT_RULES, PlannerRules, Slot, TaskIn, free_slots, plan_tasks
 
 
@@ -127,6 +127,7 @@ class ScheduleService:
             e.location = location
         if note is not None:
             e.note = note
+        e.synced_at = None  # đánh dấu "có thay đổi local" → lần đồng bộ Google sau sẽ đẩy lên
         self.s.flush()
         conflicts = [c for c in self._overlapping(new_start, new_end) if c.id != e.id]
         return CreatedEvent(event=EventOut.of(e), conflicts=[EventOut.of(c) for c in conflicts])
@@ -136,6 +137,8 @@ class ScheduleService:
         out = EventOut.of(e)
         for t in self.s.scalars(select(Task).where(Task.event_id == e.id)):
             t.event_id, t.status = None, TaskStatus.TODO  # việc đã xếp vào sự kiện này quay lại "chưa xếp"
+        if e.gcal_event_id:  # đã có trên Google → nhớ để lần đồng bộ sau xoá bên đó (bước 15)
+            self.s.merge(CalendarTombstone(gcal_event_id=e.gcal_event_id))
         self.s.delete(e)
         return out
 

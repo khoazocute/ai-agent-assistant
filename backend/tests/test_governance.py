@@ -138,6 +138,7 @@ def test_cli_dispatch(monkeypatch, argv, fn, expected):
     calls = []
     monkeypatch.setattr(cli, fn, lambda *a, **k: calls.append(a))
     monkeypatch.setattr(sys, "argv", ["app.cli", *argv])
-    monkeypatch.setattr(sys.stdin, "reconfigure", lambda **k: None, raising=False)
+    for stream in ("stdin", "stdout", "stderr"):
+        monkeypatch.setattr(getattr(sys, stream), "reconfigure", lambda **k: None, raising=False)
     cli.main()
     assert calls == [expected]

@@ -73,6 +73,7 @@ class Event(Base):
     source: Mapped[str] = mapped_column(String(20), default="local")  # local | gcal
     gcal_event_id: Mapped[str | None] = mapped_column(String(200), unique=True)  # bước 15
     etag: Mapped[str | None] = mapped_column(String(200))
+    synced_at: Mapped[datetime | None]  # lần cuối khớp với Google; NULL = có thay đổi local chưa đẩy lên
     updated_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None),
                                                  onupdate=lambda: now_vn().replace(tzinfo=None))
 
@@ -141,3 +142,24 @@ class EmailDraft(Base):
     provider_message_id: Mapped[str | None] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None))
     sent_at: Mapped[datetime | None]
+
+
+# ---------- Đồng bộ Google Calendar (bước 15) ----------
+
+
+class CalendarTombstone(Base):
+    """Sự kiện đã xoá ở máy mình nhưng còn trên Google → lần đồng bộ sau sẽ xoá bên Google."""
+
+    __tablename__ = "calendar_tombstones"
+
+    gcal_event_id: Mapped[str] = mapped_column(String(200), primary_key=True)
+    deleted_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None))
+
+
+class SyncState(Base):
+    """Trạng thái đồng bộ dạng khoá–giá trị (vd. syncToken của Google Calendar)."""
+
+    __tablename__ = "sync_state"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)

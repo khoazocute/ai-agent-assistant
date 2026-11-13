@@ -70,6 +70,16 @@ def delete_event(event_id: int, s: Session = Depends(db), rt: Runtime = Depends(
     return out
 
 
+@router.post("/schedule/sync-google")
+def sync_google(rt: Runtime = Depends(get_runtime)) -> dict:
+    from fastapi import HTTPException
+
+    try:
+        return rt.sync_calendar().model_dump()
+    except RuntimeError as e:
+        raise HTTPException(409, str(e)) from e
+
+
 @router.get("/tasks")
 def tasks(status: TaskStatus | None = None, s: Session = Depends(db)) -> list[TaskOut]:
     return ScheduleService(s).list_tasks(status)

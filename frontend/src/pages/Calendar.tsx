@@ -37,6 +37,9 @@ export default function Calendar() {
       return api<Plan>("/api/schedule/suggest", { method: "POST", json: { start: toDateStr(start), end: toDateStr(end) } });
     },
     onSuccess: setPlan });
+  const gsync = useMutation({
+    mutationFn: () => api<Record<string, number>>("/api/schedule/sync-google", { method: "POST" }),
+    onSuccess: invalidate });
   const apply = useMutation({
     mutationFn: (id: number) => api(`/api/schedule/plans/${id}/apply`, { method: "POST" }),
     onSuccess: () => { setPlan(null); invalidate(); } });
@@ -57,10 +60,16 @@ export default function Calendar() {
     setRange({ start: toDateStr(arg.start), end: toDateStr(new Date(arg.end.getTime() - 1)) });
   }
 
-  const error = createEvent.error ?? moveEvent.error ?? deleteEvent.error ?? addTask.error ?? suggest.error ?? apply.error;
+  const error = createEvent.error ?? moveEvent.error ?? deleteEvent.error ?? addTask.error ?? suggest.error ??
+    apply.error ?? gsync.error;
   return (
     <>
-      <h1>Lịch</h1>
+      <div className="spread">
+        <h1>Lịch</h1>
+        <button disabled={gsync.isPending} onClick={() => gsync.mutate()}>
+          {gsync.isPending ? "Đang đồng bộ…" : "↻ Đồng bộ Google Calendar"}
+        </button>
+      </div>
       <ErrorBox error={error} />
       <div className="card">
         <FullCalendar

@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.models import Base
+from app.harness.storage import add_missing_columns
 
 SessionFactory = sessionmaker[Session]
 
@@ -61,8 +62,9 @@ def session_scope(factory: SessionFactory) -> Iterator[Session]:
 
 
 def init_db(engine: Engine) -> None:
-    """Tạo bảng còn thiếu. Dữ liệu ban đầu (danh mục) do service nạp — xem app/bootstrap.py."""
+    """Tạo bảng còn thiếu + thêm cột mới cho bảng cũ. Dữ liệu ban đầu do service nạp — xem app/bootstrap.py."""
     db_file = engine.url.database
     if engine.url.drivername.startswith("sqlite") and db_file and db_file != ":memory:":
         Path(db_file).parent.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(engine)
+    add_missing_columns(engine, Base.metadata)
