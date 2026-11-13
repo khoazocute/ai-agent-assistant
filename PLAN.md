@@ -1,5 +1,7 @@
 # Kế hoạch: Hệ thống Multi-Agent ReAct (Chi tiêu · Lịch · Email) theo 7 Harness
 
+> **Cập nhật 2026-11-14 — đã hoàn thành 20/20 bước** (tag `step-00` … `step-20`). Trạng thái thực tế, quyết định và bài học: README, `docs/adr/`, `docs/learning/`, `docs/playbook.md`. Khác với kế hoạch gốc: LLM là Gemini (ADR-0002); skills runtime chưa làm (prompt + mô tả tool đã đủ cho phạm vi hiện tại).
+
 > **Cập nhật 2026-11-13 — đổi LLM sang Google Gemini** (`gemini-3.5-flash`, SDK `google-genai`), xem [ADR-0002](docs/adr/0002-chon-llm-gemini.md).
 > Các chi tiết viết riêng cho Claude trong kế hoạch (model `claude-opus-5-5`, `effort`, server-side fallback, prompt caching…) sẽ được thay bằng tương đương của Gemini khi tới bước tương ứng. Kiến trúc 7 harness và lộ trình giữ nguyên.
 

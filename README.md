@@ -2,87 +2,84 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_19%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-20%2F20_bước-brightgreen)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
+![tests](https://img.shields.io/badge/tests-181-brightgreen)
 
-> 🚧 Dự án đang được xây dựng **từng bước để vừa làm vừa học** — xem [Lộ trình](#lộ-trình). Ảnh demo sẽ được thêm ở bước 20.
+Xây **từng bước để vừa làm vừa học** (20 bước, mỗi bước một git tag `step-XX` + nhật ký trong [docs/learning/](docs/learning/)) — tự viết vòng ReAct, không dùng LangChain/LangGraph, để thấy rõ cơ chế.
 
 ---
 
 ## 1. Dự án giải quyết vấn đề gì?
 - Ghi chi tiêu hằng ngày rất phiền → chỉ cần **nhắn, chụp hóa đơn hoặc nói** vào Telegram.
-- Lịch và việc cần làm rời rạc → agent **gợi ý xếp việc vào khung giờ trống** và nhắc lịch.
-- Hộp thư quá tải → agent **tóm tắt, phân loại, soạn nháp** — và **chỉ gửi khi bạn duyệt**.
+- Lịch và việc cần làm rời rạc → agent **gợi ý xếp việc vào khung giờ trống** (thuật toán, không đoán) và nhắc lịch.
+- Hộp thư quá tải → agent **tóm tắt, phân loại, soạn nháp** — và **chỉ gửi khi bạn bấm duyệt**.
 
-## 2. Tính năng (dự kiến)
-| Agent | Việc làm |
+## 2. Tính năng
+| Thành phần | Việc làm |
 |---|---|
-| **Finance** | Ghi thu/chi theo danh mục (ăn uống, di chuyển, mua sắm, giải trí, khác, thu nhập, phụ cấp gia đình); tổng chi, tổng thu, **chi ròng = chi − thu**; ngân sách |
-| **Schedule** | Đặt lịch, tìm khung trống, gợi ý xếp việc, nhắc lịch, đồng bộ Google Calendar |
-| **Email** | Thu thập, tóm tắt, phân loại mail; soạn nháp; gửi **sau khi người dùng duyệt** |
-| **Supervisor** | Hiểu yêu cầu và giao việc cho đúng agent |
-| **Briefing** | Bản tin 7h sáng & tổng kết 21h tối |
-
-Thêm: đọc **ảnh hóa đơn** (Gemini vision) và **tin nhắn thoại** (faster-whisper chạy local).
+| **Finance Agent** | Ghi thu/chi (ăn uống, di chuyển, mua sắm, giải trí, khác, thu nhập, phụ cấp gia đình); tổng chi, tổng thu, **chi ròng = chi − thu** — mọi con số do code tính |
+| **Schedule Agent** | Tạo/dời/xem sự kiện (báo trùng giờ), tìm giờ trống, đề xuất xếp việc → bạn đồng ý mới áp dụng; đồng bộ 2 chiều Google Calendar |
+| **Email Agent** | Kéo thư Gmail, tóm tắt, phân loại, soạn nháp; gửi **chỉ sau khi duyệt**; cảnh báo thư lừa đảo/chèn lệnh |
+| **Supervisor** | Hiểu yêu cầu (kể cả nhiều mảng trong một câu) và giao cho đúng agent; nhớ ngữ cảnh 6 lượt + điều bạn nhờ nhớ |
+| **Bản tin** | 7h sáng & 21h tối qua Telegram (số liệu do code tính, 1 lượt LLM, có mẫu dự phòng) |
+| **Ảnh hóa đơn** | Gửi ảnh → Gemini đọc (structured output) → đề xuất khoản chi → bạn bấm ✅ Ghi |
+| **Tin thoại** | Giọng nói → chữ **ngay trên máy** (faster-whisper) → xử lý như tin gõ |
+| **Website** | Tổng quan, Chat, Chi tiêu (biểu đồ), Lịch (kéo-thả), Email & Duyệt, **Agent Runs** (prompt + Thought/Action/Observation từng bước), AgentOps — cập nhật realtime (SSE) |
 
 ## 3. Kiến trúc
 
 ```mermaid
 flowchart LR
-    TG[Telegram] --> API[FastAPI]
-    WEB[Website React] --> API
-    API --> SUP[Supervisor Agent]
-    SUP --> FIN[Finance Agent]
-    SUP --> SCH[Schedule Agent]
-    SUP --> EML[Email Agent]
-    FIN --> SVC[(Services + PostgreSQL)]
-    SCH --> SVC
-    EML --> SVC
+    TG[Telegram<br/>text · ảnh · thoại] --> RT[Runtime<br/>FastAPI]
+    WEB[Website React] --> RT
+    JOB[Job nền<br/>bản tin · nhắc lịch · đồng bộ] --> RT
+    RT --> SUP[Supervisor]
+    SUP -->|ask_finance_agent| FIN[Finance Agent]
+    SUP -->|ask_schedule_agent| SCH[Schedule Agent]
+    SUP -->|ask_email_agent| EML[Email Agent]
+    FIN --> EX{ToolExecutor<br/>validate · policy · duyệt · audit}
+    SCH --> EX
+    EML --> EX
+    EX --> SVC[(Services<br/>SQLite / PostgreSQL)]
+    SVC -.after_commit.-> SSE[SSE] -.-> WEB
     SCH -.-> GCAL[Google Calendar]
     EML -.-> GMAIL[Gmail]
 ```
 
-Mọi agent được bao quanh bởi **7 harness**:
+Mọi agent được bao quanh bởi **7 harness** (thư mục `backend/app/harness/` không phụ thuộc nghiệp vụ → tái sử dụng cho dự án khác):
 
 | Harness | Trách nhiệm | Thư mục |
 |---|---|---|
-| Context | Prompt, memory, skills, ghép ngữ cảnh | `backend/app/harness/context/` |
-| Tool | Registry, schema, thực thi, mức rủi ro | `backend/app/harness/tools/` |
-| Orchestration | Vòng ReAct, Supervisor, duyệt, job | `backend/app/harness/orchestration/` |
-| Evaluation | Eval offline/online, chấm điểm | `backend/app/harness/evaluation/`, `backend/evals/` |
-| Security | Xác thực, mã hoá, chống prompt injection | `backend/app/harness/security/` |
-| Governance | Policy-as-code, audit, kill switch | `backend/app/harness/governance/` |
-| AgentOps | Trace, metrics, cảnh báo | `backend/app/harness/agentops/` |
+| Context | `prompt.md` + version hash, memory hội thoại, user facts | `harness/context/` |
+| Tool | Schema từ type hint, validate, mức rủi ro, timeout, cắt output | `harness/tools/` |
+| Orchestration | Adapter LLM trung lập, vòng ReAct, yêu cầu duyệt | `harness/orchestration/` |
+| Evaluation | Chấm eval bằng code, ngưỡng 90% + an toàn 100%, 👍/👎 | `harness/evaluation/`, `backend/evals/` |
+| Security | `<untrusted_content>`, dò injection, PII, Fernet, JWT | `harness/security/` |
+| Governance | Policy-as-code, kill switch, audit | `harness/governance/`, `config/policies.yaml` |
+| AgentOps | Trace (JSONL + DB), chi phí, p50/p95, dọn dữ liệu | `harness/agentops/` |
 
-Chi tiết: [PLAN.md](PLAN.md) · [docs/02-architecture.md](docs/02-architecture.md)
+Chi tiết: [docs/02-architecture.md](docs/02-architecture.md) · bảo mật: [docs/05-security-governance.md](docs/05-security-governance.md) · tool: [docs/04-tool-catalog.md](docs/04-tool-catalog.md) (sinh từ code)
 
 ## 4. Một yêu cầu được xử lý thế nào?
-Mỗi yêu cầu chạy qua **vòng ReAct** ([react_loop.py](backend/app/harness/orchestration/react_loop.py)): model suy nghĩ (Thought) → đề nghị gọi tool (Action) → **code của mình** chạy tool và gửi kết quả lại (Observation) → lặp tới khi model trả lời xong hoặc chạm giới hạn bước. Mọi bước được ghi vào trace JSONL.
+Mỗi yêu cầu chạy qua **vòng ReAct** ([react_loop.py](backend/app/harness/orchestration/react_loop.py)): model suy nghĩ (Thought) → đề nghị gọi tool (Action) → **code của mình** kiểm tra + chạy tool rồi gửi kết quả lại (Observation) → lặp tới khi trả lời xong hoặc chạm giới hạn bước. Mọi bước được lưu và xem lại được ở trang **Agent Runs** hoặc `python -m app.cli run <id>`.
 
-Trace thật (bước 2, `gemini-3.5-flash`):
+Trace thật (`gemini-3.5-flash`):
 ```
-USER: Hôm nay là ngày mấy? Còn bao nhiêu ngày nữa đến Tết Dương lịch 2027, và nếu từ hôm nay
-      mỗi ngày tôi tiết kiệm 85k thì đến hôm đó tôi có bao nhiêu tiền?
+USER: trưa nay ăn phở 45k, đổ xăng 60k, tối qua đi xem phim 120k
+  [ACTION] add_transaction({"amount_vnd": 45000, "category": "an_uong", "note": "ăn phở"})
+  [ACTION] add_transaction({"amount_vnd": 60000, "category": "di_chuyen", "note": "đổ xăng"})
+  [ACTION] add_transaction({"amount_vnd": 120000, "category": "giai_tri", "occurred_on": "2026-11-12", "note": "xem phim"})
+  [ANSWER] Đã ghi 3 khoản: Ăn phở 45.000đ (Ăn uống) · Đổ xăng 60.000đ (Di chuyển) · Xem phim 120.000đ (Giải trí, hôm qua)
 
-── Bước 1 · 2979 ms · tokens in=316
-  [THOUGHT]     …First, I need to pinpoint today's date… then days until January 1st, 2027…
-  [ACTION]      get_current_time({})
-  [OBSERVATION] Friday 13/11/2026 21:42 (Asia/Ho_Chi_Minh)
-── Bước 2 · 2854 ms · tokens in=745
-  [ACTION]      days_between({"start": "2026-11-13", "end": "2027-01-01"})
-  [OBSERVATION] 49
-── Bước 3 · 2089 ms · tokens in=1116
-  [ACTION]      calculate({"expression": "49 * 85000"})
-  [OBSERVATION] 4165000
-── Bước 4 · 3942 ms · tokens in=1325
-  [ANSWER]      Hôm nay là ngày 13/11/2026. Còn 49 ngày nữa là đến Tết Dương lịch 2027 (01/01/2027).
-                Nếu mỗi ngày tiết kiệm 85.000đ, đến hôm đó bạn sẽ có 4.165.000đ.
-■ OK sau 4 bước · tổng tokens in=3502 out=156 thinking=544
+USER: xoá hết ghi chú tiết kiệm của tôi
+  [ACTION]      delete_all_savings_notes({})
+  [OBSERVATION] ⛔ mức rủi ro 'destructive' → đã tạo yêu cầu duyệt, CHƯA thực hiện
 ```
 
 ## 5. Kết quả benchmark
-So sánh **single-agent vs multi-agent** về chất lượng, độ trễ, chi phí. Bảng dưới được **sinh tự động** bởi `backend/benchmarks/report.py` — không điền tay.
+So sánh **single-agent vs multi-agent** về chất lượng, độ trễ, chi phí trên cùng bộ ca. Bảng dưới được **sinh tự động** bởi `backend/benchmarks/report.py` — không điền tay.
 
 <!-- BENCH:START -->
 | Cấu hình | Model | Đạt | An toàn | Finance | Schedule | Email | Liên miền | p50 | p95 | Token vào/ca | Token ra/ca | Bước/ca | Chi phí/ca |
@@ -94,6 +91,8 @@ _Chạy lúc 2026-11-14T00:31:06+07:00 · bộ ca: finance, schedule, email, mix
 _⚠ Chỉ chạy 2 ca chọn lọc (mix-001, eml-007) — số liệu minh hoạ, CHƯA đủ để kết luận (cần chạy đủ 38 ca)._
 <!-- BENCH:END -->
 
+Đọc nhanh: multi-agent **ít token vào hơn ~45%** (mỗi agent prompt ngắn, ít tool) nhưng **chậm hơn ~2,8×** (lượt gọi nối tiếp). Chạy đủ 38 ca: `cd backend; python -m benchmarks.run --delay 2` (cần billing Gemini) — xem [ADR-0008](docs/adr/0008-single-hay-multi-agent.md).
+
 ## 6. Quyết định thiết kế (ADR)
 | ADR | Quyết định | Trạng thái |
 |---|---|---|
@@ -104,7 +103,7 @@ _⚠ Chỉ chạy 2 ca chọn lọc (mix-001, eml-007) — số liệu minh ho�
 | [0005](docs/adr/0005-phat-trien-theo-eval.md) | Phát triển theo eval; chấm bằng code; ngưỡng 90% + an toàn 100% | Accepted |
 | [0006](docs/adr/0006-tu-luu-trace-vao-db.md) | Tự lưu trace vào DB (agent_runs + agent_events), chi phí từ pricing.yaml | Accepted |
 | [0007](docs/adr/0007-thuat-toan-xep-lich-xac-dinh.md) | Thuật toán xếp lịch xác định; đề xuất → người dùng đồng ý → áp dụng | Accepted |
-| [0008](docs/adr/0008-single-hay-multi-agent.md) | Single vs multi-agent quyết định bằng benchmark (chờ số liệu) | Proposed |
+| [0008](docs/adr/0008-single-hay-multi-agent.md) | Single vs multi-agent quyết định bằng benchmark (có số liệu thử) | Proposed |
 | [0009](docs/adr/0009-email-la-du-lieu-khong-tin-cay.md) | Email là dữ liệu không tin cậy: bọc, gắn cờ, giới hạn tool, chặn gửi ở code | Accepted |
 | [0010](docs/adr/0010-thuc-thi-xac-dinh-sau-khi-duyet.md) | Policy-as-code + duyệt; duyệt xong code chạy đúng tham số đã lưu | Accepted |
 | [0011](docs/adr/0011-chien-luoc-memory-context.md) | Memory: 6 lượt chữ gần nhất + facts tra khi cần | Accepted |
@@ -114,83 +113,72 @@ _⚠ Chỉ chạy 2 ca chọn lọc (mix-001, eml-007) — số liệu minh ho�
 | [0015](docs/adr/0015-speech-to-text-local.md) | Giọng nói → chữ chạy local (faster-whisper), không gửi giọng nói ra ngoài | Accepted |
 | [0016](docs/adr/0016-sse-cap-nhat-realtime.md) | SSE + listener after_commit cho cập nhật realtime | Accepted |
 
-Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
-
-## 7. Bắt đầu nhanh (trạng thái hiện tại)
-Yêu cầu: Python 3.11+, Git.
+## 7. Bắt đầu nhanh
+Yêu cầu: Python 3.11+, Node 20+ (cho website), Git. Gemini API key: https://aistudio.google.com/apikey
 
 ```powershell
-git clone <repo-url>
-cd <repo>
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+git clone <repo-url>; cd <repo>
+python -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -e "backend[dev]"
-copy .env.example .env      # rồi điền khoá vào .env
-pytest backend
+copy .env.example .env          # điền GEMINI_API_KEY (+ WEB_PASSWORD, JWT_SECRET để dùng web)
+pytest backend                  # 181 test, không cần mạng
 ```
-Gemini API key lấy tại https://aistudio.google.com/apikey (điền `GEMINI_API_KEY` trong `.env`).
 
-**Dùng Finance Agent ngay trên terminal** (chạy trong thư mục `backend`):
+**Thử trên terminal** (trong `backend/`):
 ```powershell
-cd backend
-python -m app.cli chat              # nhắn: "trưa ăn phở 45k, đổ xăng 60k" · "tháng này tôi chi bao nhiêu?"
-python -m app.cli chat --agent schedule   # "chiều mai 3h họp nhóm" · "mai xếp 2 tiếng học tiếng Anh"
-python -m app.cli events            # lịch 7 ngày tới + việc cần làm
-python -m app.cli summary           # báo cáo tháng này — tính bằng code, không qua LLM
-python -m app.cli list              # giao dịch gần nhất
-python -m app.cli runs              # các lần chạy gần nhất · `run <id>` xem lại prompt + tool · `stats` thống kê
-python -m app.cli approvals         # yêu cầu chờ duyệt (gửi thư, xoá…) · `approve <id>` · `reject <id>` · `audit`
-python -m evals.run                 # eval 15 ca với Gemini thật (xem backend/evals/README.md)
+python -m app.cli chat              # supervisor: "trưa ăn phở 45k, chiều mai 3h họp nhóm"
+python -m app.cli chat --agent finance --quiet
+python -m app.cli summary · list · events        # dữ liệu, tính bằng code, không qua LLM
+python -m app.cli runs · run <id> · stats        # trace: prompt + tool từng bước, p50/p95, chi phí
+python -m app.cli approvals · approve <id> · reject <id> · audit
+python -m app.cli brief morning                  # bản tin sáng
+python -m evals.run --agent finance --delay 5    # eval với Gemini thật
 ```
-Dữ liệu lưu ở `backend/data/app.db` (SQLite, không commit).
 
-Các script học tập (`backend/experiments/`):
+### Chạy website (+ Telegram + job nền, một tiến trình)
+1. `.env`: `WEB_PASSWORD=…`, `JWT_SECRET=…` (tạo: `python -c "import secrets; print(secrets.token_urlsafe(48))"`), `TELEGRAM_MODE=polling` nếu dùng bot.
+2. `cd frontend; npm install; npm run build`
+3. `cd backend; uvicorn app.main:app` → http://localhost:8000
+
+Sửa giao diện: `cd frontend; npm run dev` → http://localhost:5173 (proxy `/api` sang :8000).
+
+### Docker + PostgreSQL
 ```powershell
-python backend\experiments\first_tool_call.py
-python backend\experiments\react_loop_demo.py          # bước 2: vòng ReAct + trace
-python backend\experiments\tool_registry_demo.py       # bước 3: schema tự sinh, chặn tool rủi ro
+copy .env.example .env      # điền GEMINI_API_KEY, WEB_PASSWORD, JWT_SECRET, POSTGRES_PASSWORD, TELEGRAM_*
+docker compose up -d --build
 ```
-### Chạy website
-1. `.env`: `WEB_PASSWORD=<mật khẩu>` và `JWT_SECRET=<chuỗi ngẫu nhiên ≥ 32 ký tự>`
-   (tạo: `python -c "import secrets; print(secrets.token_urlsafe(48))"`)
-2. Build giao diện (cần Node 20+): `cd frontend; npm install; npm run build`
-3. Chạy: `cd backend; uvicorn app.main:app --reload` → mở http://localhost:8000
-4. Muốn Telegram cập nhật web realtime: `.env` `TELEGRAM_MODE=polling` → bot chạy chung tiến trình web (không cần chạy bot riêng).
-
-Khi sửa giao diện: `cd frontend; npm run dev` → http://localhost:5173 (tự proxy `/api` sang :8000).
+Ra internet: đặt sau reverse proxy HTTPS, `COOKIE_SECURE=true`, `TELEGRAM_MODE=webhook` — xem [runbook](docs/07-runbook.md).
 
 ### Kết nối Telegram
-1. Nhắn [@BotFather](https://t.me/BotFather) → `/newbot` → đặt tên → nhận **token** → `.env`: `TELEGRAM_BOT_TOKEN=...`
-2. `cd backend; python -m app.integrations.telegram_bot` → nhắn `/start` cho bot → bot trả lời **chat_id** của bạn.
-3. `.env`: `TELEGRAM_ALLOWED_CHAT_IDS=<chat_id>` → chạy lại bot. Chỉ chat_id trong danh sách được dùng.
-4. Nhắn bình thường; yêu cầu rủi ro hiện nút ✅ Duyệt / ❌ Từ chối. Lệnh: `/approvals`, `/trace`, `/reset`.
+1. Nhắn [@BotFather](https://t.me/BotFather) → `/newbot` → nhận **token** → `.env`: `TELEGRAM_BOT_TOKEN=...`
+2. Chạy web với `TELEGRAM_MODE=polling` (hoặc `python -m app.integrations.telegram_bot`) → nhắn `/start` → bot trả lời **chat_id**.
+3. `.env`: `TELEGRAM_ALLOWED_CHAT_IDS=<chat_id>` → chạy lại. Chỉ chat_id trong danh sách được dùng.
+4. Nhắn chữ, gửi ảnh hóa đơn, tin thoại. Yêu cầu rủi ro hiện nút ✅ Duyệt / ❌ Từ chối. Lệnh: `/approvals`, `/trace`, `/reset`.
 
 ### Tin nhắn thoại (tuỳ chọn)
-`pip install -e "backend[voice]"` → gửi tin thoại cho bot. Giọng nói được chuyển thành chữ **ngay trên máy** (faster-whisper); `.env` `WHISPER_MODEL=small` (hoặc `medium`: chính xác hơn, chậm hơn). Lần đầu tự tải model.
+`pip install -e "backend[voice]"`; `.env` `WHISPER_MODEL=small` (hoặc `medium`: chính xác hơn, chậm hơn). Lần đầu tự tải model.
 
 ### Kết nối Google (Gmail + Calendar)
 1. `pip install -e "backend[google]"`
 2. [Google Cloud Console](https://console.cloud.google.com/): tạo project → bật **Gmail API** và **Google Calendar API**.
 3. *OAuth consent screen*: External, thêm email của bạn vào **Test users**.
-4. *Credentials* → *Create OAuth client ID* → loại **Desktop app** → tải JSON về `backend/data/google_client_secret.json`.
-5. Tạo khoá mã hoá, dán vào `.env` dòng `FERNET_KEY=`:
-   `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
-6. `cd backend; python -m app.integrations.google_auth` → đăng nhập trên trình duyệt. Token được mã hoá ở `backend/data/google_token.enc`.
+4. *Credentials* → *Create OAuth client ID* → **Desktop app** → tải JSON về `backend/data/google_client_secret.json`.
+5. `.env` `FERNET_KEY=` ← `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+6. `cd backend; python -m app.integrations.google_auth` → đăng nhập. Token mã hoá ở `backend/data/google_token.enc`.
 7. Đồng bộ lịch: `python -m app.cli gcal-sync` (hoặc nút trên trang Lịch; job nền tự chạy mỗi 10 phút).
-
 
 ## 8. Cấu trúc thư mục
 ```
-PLAN.md            kế hoạch tổng thể
-CLAUDE.md          quy ước dự án cho Claude Code
-docs/              tài liệu thiết kế, ADR, nhật ký học, playbook
-backend/app/       mã nguồn: harness/ (7 harness), agents/, services/, integrations/, api/, jobs/, db/
-backend/evals/     bộ eval        backend/benchmarks/  benchmark single vs multi
-backend/skills/    runtime skills (SKILL.md) cho agent
-frontend/          website React (bước 13)
+backend/app/
+  harness/      7 harness (không import nghiệp vụ)    agents/   finance · schedule · email · supervisor · single
+  services/     nghiệp vụ: finance, schedule, planner, email, calendar_sync, briefing
+  integrations/ Gmail, Google Calendar, Telegram, speech    api/  FastAPI routers
+  jobs/         APScheduler    runtime.py  chat.py  realtime.py  notify.py  cli.py  main.py
+backend/config/ policies.yaml · pricing.yaml      backend/evals/  38 ca eval   backend/benchmarks/
+backend/tests/  181 test      frontend/  React + Vite      docs/  thiết kế · ADR · runbook · playbook · learning
 ```
 
-## 9. Lộ trình
+## 9. Lộ trình (hoàn thành)
 | Giai đoạn | Bước | Trạng thái |
 |---|---|---|
 | 0. Chuẩn bị | 0 · Khung dự án, tài liệu nền, ADR-0001 | ✅ |
@@ -200,9 +188,11 @@ frontend/          website React (bước 13)
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ✅ |
 | 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ✅ |
 | 6. Mở rộng | 16 · Bản tin · 17 · Ảnh hóa đơn · 18 · Giọng nói | ✅ |
-| 7. Hoàn thiện | 19 · Benchmark ✅ (chạy thử 2 ca; đủ 38 ca cần billing) · 20 · Docker, CI, demo, playbook | 🔄 |
+| 7. Hoàn thiện | 19 · Benchmark (thử 2 ca) · 20 · Docker, PostgreSQL, CI, runbook, playbook | ✅ |
 
-Nhật ký học từng bước: [docs/learning/](docs/learning/)
+Nhật ký học từng bước: [docs/learning/](docs/learning/) · `git checkout step-05` để xem dự án ở từng bước.
 
 ## 10. Bài học rút ra
-_Tổng kết ở [docs/playbook.md](docs/playbook.md) khi hoàn thành._
+[docs/playbook.md](docs/playbook.md) — trình tự xây, checklist 7 harness cho agent mới, và các lỗi thật đã gặp (model đoán số tiền, khoá ghi SQLite, đồng bộ ghi đè, thư viện không tương thích…) cùng cách phòng.
+
+**Còn mở**: benchmark đủ 38 ca + điền giá thật trong `pricing.yaml` (cần billing Gemini); kết nối Gmail/Calendar/Telegram bằng thông tin của bạn.

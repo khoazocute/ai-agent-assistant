@@ -33,7 +33,7 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         rt = app.state.runtime = runtime or Runtime.create()
         rt.bus.bind(asyncio.get_running_loop())
-        bot = await _start_telegram(rt)
+        bot = app.state.telegram = await _start_telegram(rt)
         scheduler = _start_jobs(rt)
         yield
         if scheduler is not None:
@@ -64,6 +64,25 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
         return StreamingResponse(request.app.state.runtime.bus.subscribe(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
+    @app.post("/api/telegram/webhook", include_in_schema=False)
+    async def telegram_webhook(request: Request) -> dict:
+        import hmac
+
+        from fastapi import HTTPException
+
+        bot = getattr(request.app.state, "telegram", None)
+        secret = get_settings().telegram_webhook_secret
+        given = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        # Chỉ Telegram biết secret (đặt lúc set_webhook) → chặn ai đó tự POST update giả vào đây.
+        if not secret or not hmac.compare_digest(given.encode(), secret.encode()):
+            raise HTTPException(403, "Sai secret")
+        if bot is None:
+            raise HTTPException(503, "Bot chưa chạy ở chế độ webhook")
+        from telegram import Update
+
+        await bot.process_update(Update.de_json(await request.json(), bot.bot))
+        return {"ok": True}
+
     @app.get("/health")
     def health() -> dict:
         return {"status": "ok"}
@@ -89,17 +108,25 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
 
 
 async def _start_telegram(rt: Runtime):
-    """TELEGRAM_MODE=polling → bot chạy chung tiến trình với web: tin nhắn Telegram ghi DB → SSE → web cập nhật."""
+    """Bot chạy CHUNG tiến trình với web → tin Telegram ghi DB → SSE → web cập nhật.
+    polling: bot tự hỏi Telegram (dev, không cần domain) · webhook: Telegram gọi vào URL HTTPS của mình (production).
+    """
     settings = get_settings()
-    if settings.telegram_mode != "polling" or not settings.telegram_bot_token:
+    if settings.telegram_mode not in ("polling", "webhook") or not settings.telegram_bot_token:
         return None
     from app.integrations.telegram_bot import build_application
 
     bot = build_application(settings.telegram_bot_token, rt, settings.allowed_chat_ids)
     await bot.initialize()
     await bot.start()
-    await bot.updater.start_polling(drop_pending_updates=True)
-    log.info("Telegram bot đang chạy (polling) trong tiến trình web")
+    if settings.telegram_mode == "polling":
+        await bot.updater.start_polling(drop_pending_updates=True)
+    else:
+        if not settings.public_base_url.startswith("https://") or len(settings.telegram_webhook_secret) < 16:
+            raise RuntimeError("Webhook cần PUBLIC_BASE_URL https://… và TELEGRAM_WEBHOOK_SECRET ≥ 16 ký tự")
+        await bot.bot.set_webhook(f"{settings.public_base_url.rstrip('/')}/api/telegram/webhook",
+                                  secret_token=settings.telegram_webhook_secret, drop_pending_updates=True)
+    log.info("Telegram bot đang chạy (%s) trong tiến trình web", settings.telegram_mode)
     return bot
 
 
@@ -120,7 +147,8 @@ def runtime_is_test(rt: Runtime) -> bool:
 
 
 async def _stop_telegram(bot) -> None:
-    await bot.updater.stop()
+    if bot.updater and bot.updater.running:
+        await bot.updater.stop()
     await bot.stop()
     await bot.shutdown()
 

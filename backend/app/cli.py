@@ -11,6 +11,8 @@
     python -m app.cli audit [n]          nhật ký audit: ai đã làm gì
     python -m app.cli gcal-sync          đồng bộ hai chiều với Google Calendar
     python -m app.cli brief morning|evening [--send]   tạo bản tin (in ra; --send gửi Telegram)
+    python -m app.cli tools [--write]    catalog tool sinh từ code (--write → docs/04-tool-catalog.md)
+    python -m app.cli backup             sao lưu DB SQLite vào backend/data/backups/
 """
 
 from __future__ import annotations
@@ -235,6 +237,68 @@ def cmd_brief(kind: str, send: bool) -> None:
         print("\n(đã gửi qua Telegram nếu ngoài giờ yên lặng 22:30–06:30)")
 
 
+def tool_catalog_markdown() -> str:
+    """Catalog tool sinh TỪ CODE (registry thật của từng agent) → tài liệu không bao giờ lệch với code."""
+    from app.agents.email.tools import build_email_tools
+    from app.agents.finance.tools import build_finance_tools
+    from app.agents.memory_tools import build_memory_tools
+    from app.agents.schedule.tools import build_schedule_tools
+    from app.config import CONFIG_DIR
+    from app.harness.governance.policy_engine import Policy
+    from app.integrations.email_provider import FakeEmailProvider
+
+    policy = Policy.load(CONFIG_DIR / "policies.yaml")
+    groups = {"finance": build_finance_tools(None), "schedule": build_schedule_tools(None),
+              "email": build_email_tools(None, FakeEmailProvider()),
+              "supervisor/single (memory)": build_memory_tools(None)}
+    lines = ["# Tool catalog", "",
+             "> **Sinh tự động** bởi `python -m app.cli tools --write` từ registry trong code"
+             " + `config/policies.yaml`.",
+             "> Đừng sửa tay — sửa docstring/type hint của tool rồi chạy lại lệnh.", "",
+             "Supervisor có thêm `ask_finance_agent`, `ask_schedule_agent`, `ask_email_agent`"
+             " (agent-as-tool, risk read).", ""]
+    for agent, registry in groups.items():
+        lines += [f"## {agent}", "", "| Tool | Risk | Policy | Tham số | Mô tả |", "|---|---|---|---|---|"]
+        for t in registry.tools():
+            params = t.spec.parameters.get("properties", {})
+            required = set(t.spec.parameters.get("required", []))
+            args = ", ".join(f"`{k}`" + ("" if k in required else "?") for k in params) or "—"
+            decision = policy.decide(t.name, t.risk).decision
+            desc = " ".join(t.description.split())
+            lines.append(f"| `{t.name}` | {t.risk} | {decision} | {args} | {desc} |")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def cmd_tools(write: bool) -> None:
+    from app.config import ROOT
+
+    text = tool_catalog_markdown()
+    if write:
+        (ROOT / "docs" / "04-tool-catalog.md").write_text(text, encoding="utf-8")
+        print("Đã ghi docs/04-tool-catalog.md")
+    else:
+        print(text)
+
+
+def cmd_backup() -> None:
+    import sqlite3
+    from datetime import datetime
+
+    from app.config import DATA_DIR, get_settings
+
+    url = get_settings().resolved_database_url
+    if not url.startswith("sqlite:///"):
+        sys.exit("Lệnh này cho SQLite. PostgreSQL: dùng pg_dump (xem docs/07-runbook.md).")
+    src = url.removeprefix("sqlite:///")
+    dest = DATA_DIR / "backups" / f"app-{datetime.now():%Y%m%d-%H%M%S}.db"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    # Dùng backup API của SQLite: sao chép NHẤT QUÁN kể cả khi app đang ghi (copy file thường có thể hỏng).
+    with sqlite3.connect(src) as source, sqlite3.connect(dest) as target:
+        source.backup(target)
+    print(f"Đã sao lưu → {dest}")
+
+
 def main() -> None:
     from app.agents.registry import AGENT_NAMES
     from app.services.finance_service import Period
@@ -261,6 +325,8 @@ def main() -> None:
     brief = sub.add_parser("brief", help="bản tin sáng/tối")
     brief.add_argument("kind", choices=["morning", "evening"])
     brief.add_argument("--send", action="store_true")
+    sub.add_parser("tools", help="catalog tool").add_argument("--write", action="store_true")
+    sub.add_parser("backup", help="sao lưu DB SQLite")
 
     args = parser.parse_args()
     match args.command:
@@ -288,6 +354,10 @@ def main() -> None:
             cmd_gcal_sync()
         case "brief":
             cmd_brief(args.kind, args.send)
+        case "tools":
+            cmd_tools(args.write)
+        case "backup":
+            cmd_backup()
 
 
 if __name__ == "__main__":

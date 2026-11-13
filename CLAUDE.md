@@ -20,7 +20,11 @@ Không làm vượt bước; không thêm harness/thư viện trước khi bư�
 pip install -e "backend[dev]"
 pytest backend
 ruff check backend
-cd backend; python -m app.cli chat   # chat với Finance Agent (summary / list: không qua LLM)
+cd backend; python -m app.cli chat   # chat (mặc định supervisor); runs / run <id> / approvals / audit
+cd backend; uvicorn app.main:app    # web + Telegram (TELEGRAM_MODE=polling) + job nền
+cd backend; python -m app.cli tools --write   # sau khi sửa tool: sinh lại docs/04-tool-catalog.md
+cd frontend; npm run build          # giao diện → frontend/dist (FastAPI phục vụ)
+docker compose up -d --build        # PostgreSQL + app
 ```
 Gói Gemini miễn phí giới hạn ~20 request/ngày/model — chạy thử với LLM thật tiết kiệm; test dùng `tests/fakes.py`.
 

@@ -142,3 +142,12 @@ def test_cli_dispatch(monkeypatch, argv, fn, expected):
         monkeypatch.setattr(getattr(sys, stream), "reconfigure", lambda **k: None, raising=False)
     cli.main()
     assert calls == [expected]
+
+
+def test_tool_catalog_doc_matches_code():
+    """docs/04-tool-catalog.md sinh từ code — lệch (quên chạy lại sau khi sửa tool) thì CI báo đỏ."""
+    from app.cli import tool_catalog_markdown
+    from app.config import ROOT
+
+    doc = (ROOT / "docs" / "04-tool-catalog.md").read_text(encoding="utf-8")
+    assert doc == tool_catalog_markdown(), "Chạy: cd backend; python -m app.cli tools --write"
