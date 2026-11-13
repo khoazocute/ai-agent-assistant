@@ -1,12 +1,12 @@
 # Supervisor Agent — agent card
-> Spec cho **người đọc**. Model đọc `prompt.md` (viết ở bước 9).
+> Spec cho **người đọc**. Model đọc [`prompt.md`](prompt.md). Code: [`agent.py`](agent.py).
 
 | Mục | Nội dung |
 |---|---|
 | Mục tiêu | Hiểu yêu cầu, chia nhỏ nếu liên miền, giao cho đúng agent, tổng hợp câu trả lời |
 | Mẫu thiết kế | **Agent-as-tool**: mỗi sub-agent là một tool; run con liên kết bằng `parent_run_id` |
 | Giới hạn | Không gọi trực tiếp tool nghiệp vụ; độ sâu ủy quyền tối đa 1 tầng |
-| Model / effort | `claude-opus-5-5` / `low` |
+| Model | `GEMINI_MODEL` — ADR-0002 |
 | Ghi chú | Có hay không có Supervisor được quyết định bằng benchmark single vs multi (ADR-0008, bước 9) |
 
 ## Tools

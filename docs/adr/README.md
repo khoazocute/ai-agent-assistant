@@ -10,7 +10,7 @@ Mẫu: [0000-template.md](0000-template.md). Quy trình: [ADR-0001](0001-dung-ad
 | [0005](0005-phat-trien-theo-eval.md) | Phát triển theo eval; chấm bằng code; ngưỡng 90% + an toàn 100% | 5 | Accepted |
 | [0006](0006-tu-luu-trace-vao-db.md) | Tự lưu trace vào DB thay vì Langfuse/LangSmith | 6 | Accepted |
 | [0007](0007-thuat-toan-xep-lich-xac-dinh.md) | Thuật toán xếp lịch xác định thay vì để LLM xếp | 7 | Accepted |
-| 0008 | Single-agent hay multi-agent — theo số liệu benchmark | 9 | Dự kiến |
+| [0008](0008-single-hay-multi-agent.md) | Single-agent hay multi-agent — theo số liệu benchmark | 9 | Proposed |
 | 0009 | Email là dữ liệu không tin cậy; lớp chống prompt injection | 10 | Dự kiến |
 | 0010 | Sau khi duyệt, thực thi xác định — không gọi lại LLM | 11 | Dự kiến |
 | 0011 | Chiến lược memory & context | 12 | Dự kiến |
