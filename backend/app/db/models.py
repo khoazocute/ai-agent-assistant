@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, ForeignKey, String
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.config import now_vn
@@ -47,3 +47,60 @@ class Transaction(Base):
     created_at: Mapped[datetime] = mapped_column(default=now_vn)
 
     category: Mapped[Category] = relationship(lazy="joined")
+
+
+# ---------- Lịch (bước 7) ----------
+# Thời gian lưu là giờ Việt Nam KHÔNG kèm múi giờ (naive): app một người dùng ở VN; SQLite không lưu
+# múi giờ. Mọi đầu vào có múi giờ được quy về giờ VN ở service trước khi lưu.
+
+
+class TaskStatus(StrEnum):
+    TODO = "todo"
+    SCHEDULED = "scheduled"
+    DONE = "done"
+
+
+class Event(Base):
+    __tablename__ = "events"
+    __table_args__ = (CheckConstraint("end_at > start_at", name="ck_events_end_after_start"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    start_at: Mapped[datetime] = mapped_column(index=True)
+    end_at: Mapped[datetime] = mapped_column(index=True)
+    location: Mapped[str] = mapped_column(String(200), default="")
+    note: Mapped[str] = mapped_column(String(1000), default="")
+    source: Mapped[str] = mapped_column(String(20), default="local")  # local | gcal
+    gcal_event_id: Mapped[str | None] = mapped_column(String(200), unique=True)  # bước 15
+    etag: Mapped[str | None] = mapped_column(String(200))
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None),
+                                                 onupdate=lambda: now_vn().replace(tzinfo=None))
+
+
+class Task(Base):
+    """Việc cần làm chưa có giờ cố định — planner sẽ tìm chỗ trống cho nó."""
+
+    __tablename__ = "tasks"
+    __table_args__ = (CheckConstraint("duration_min > 0", name="ck_tasks_duration_positive"),
+                      CheckConstraint("priority BETWEEN 1 AND 3", name="ck_tasks_priority"))
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    duration_min: Mapped[int]
+    deadline: Mapped[datetime | None]
+    priority: Mapped[int] = mapped_column(default=2)  # 1 cao · 2 thường · 3 thấp
+    status: Mapped[TaskStatus] = mapped_column(String(12), default=TaskStatus.TODO, index=True)
+    event_id: Mapped[int | None] = mapped_column(ForeignKey("events.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None))
+
+
+class SchedulePlan(Base):
+    """Phương án xếp lịch ĐỀ XUẤT. Chỉ thành sự kiện thật khi apply — người dùng xem trước rồi mới đồng ý."""
+
+    __tablename__ = "schedule_plans"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    status: Mapped[str] = mapped_column(String(12), default="proposed")  # proposed | applied | discarded
+    items: Mapped[list[dict]] = mapped_column(JSON)  # [{task_id, title, start, end}]
+    unscheduled: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: now_vn().replace(tzinfo=None))

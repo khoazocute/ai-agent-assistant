@@ -77,6 +77,8 @@ class LLMClient(Protocol):
 
     def user_message(self, text: str) -> Any: ...
 
+    def assistant_message(self, text: str) -> Any: ...
+
     def tool_results_message(self, results: list[ToolResult]) -> Any: ...
 
     def generate(self, system: str, history: list[Any], tools: list[ToolSpec]) -> LLMResponse: ...
@@ -114,6 +116,11 @@ class GeminiClient:
     def user_message(self, text: str) -> Any:
         t = self._types
         return t.Content(role="user", parts=[t.Part(text=text)])
+
+    def assistant_message(self, text: str) -> Any:
+        """Câu trả lời CŨ của model (memory hội thoại) — chỉ phần chữ, không kèm tool call cũ."""
+        t = self._types
+        return t.Content(role="model", parts=[t.Part(text=text)])
 
     def tool_results_message(self, results: list[ToolResult]) -> Any:
         t = self._types

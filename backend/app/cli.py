@@ -1,8 +1,9 @@
 """Dòng lệnh để dùng thử agent và xem vận hành (trước/song song với Telegram/web).
 
-    python -m app.cli chat [--quiet]     chat với agent, in Thought/Action/Observation
+    python -m app.cli chat [--agent schedule] [--quiet]   chat với agent, in Thought/Action/Observation
     python -m app.cli summary [period]   báo cáo thu chi — gọi THẲNG service, không qua LLM
     python -m app.cli list [n]           n giao dịch gần nhất
+    python -m app.cli events [days]      lịch từ hôm nay tới `days` ngày sau + việc cần làm
     python -m app.cli runs [n]           các run gần nhất (từ DB)
     python -m app.cli run <run_id>       xem lại CHÍNH XÁC prompt + tool từng bước của một run
     python -m app.cli stats              thống kê theo agent: thành công, p50/p95, token, chi phí
@@ -77,6 +78,26 @@ def cmd_list(limit: int) -> None:
         print("  (chưa có giao dịch)")
 
 
+def cmd_events(days: int) -> None:
+    from datetime import timedelta
+
+    from app.bootstrap import setup_database
+    from app.config import today_vn
+    from app.services.schedule_service import ScheduleService
+
+    with session_scope(setup_database()) as s:
+        svc = ScheduleService(s)
+        events = svc.list_events(today_vn(), today_vn() + timedelta(days=days))
+        tasks = svc.list_tasks()
+    for e in events:
+        print(f"  #{e.id:<4} {e.start_at:%a %d/%m %H:%M}–{e.end_at:%H:%M}  {e.title}")
+    if not events:
+        print("  (không có sự kiện)")
+    for t in tasks:
+        deadline = f" · hạn {t.deadline:%d/%m %H:%M}" if t.deadline else ""
+        print(f"  việc #{t.id:<3} [{t.status}] {t.title} ({t.duration_min} phút{deadline})")
+
+
 def cmd_runs(limit: int) -> None:
     from app.bootstrap import load_pricing, setup_database
     from app.harness.agentops.store import recent_runs
@@ -144,6 +165,7 @@ def cmd_stats() -> None:
 
 
 def main() -> None:
+    from app.agents.registry import AGENT_NAMES
     from app.services.finance_service import Period
 
     sys.stdout.reconfigure(encoding="utf-8")
@@ -151,10 +173,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
     chat = sub.add_parser("chat", help="chat với agent")
+    chat.add_argument("--agent", default="finance", choices=AGENT_NAMES)
     chat.add_argument("--quiet", action="store_true", help="chỉ in câu trả lời, không in trace")
     summary = sub.add_parser("summary", help="báo cáo thu chi (không qua LLM)")
     summary.add_argument("period", nargs="?", default="this_month", choices=get_args(Period))
     sub.add_parser("list", help="giao dịch gần nhất").add_argument("limit", nargs="?", type=int, default=20)
+    sub.add_parser("events", help="lịch sắp tới").add_argument("days", nargs="?", type=int, default=7)
     sub.add_parser("runs", help="các run gần nhất").add_argument("limit", nargs="?", type=int, default=20)
     sub.add_parser("run", help="xem chi tiết một run").add_argument("run_id")
     sub.add_parser("stats", help="thống kê vận hành theo agent")
@@ -162,11 +186,13 @@ def main() -> None:
     args = parser.parse_args()
     match args.command:
         case "chat":
-            cmd_chat(args.quiet)
+            cmd_chat(args.agent, args.quiet)
         case "summary":
             cmd_summary(args.period)
         case "list":
             cmd_list(args.limit)
+        case "events":
+            cmd_events(args.days)
         case "runs":
             cmd_runs(args.limit)
         case "run":

@@ -38,22 +38,27 @@ def run_react(
     max_steps: int = 6,
     tracer: Tracer | None = None,
     meta: dict[str, Any] | None = None,
+    history: list[tuple[str, str]] | None = None,
 ) -> RunResult:
-    """`meta`: thông tin thêm ghi vào run_start (vd. agent, prompt_version) — để biết run dùng prompt nào."""
+    """`meta`: thông tin thêm ghi vào run_start (vd. agent, prompt_version) — để biết run dùng prompt nào.
+    `history`: các lượt hội thoại trước [("user"|"assistant", text)] — memory ngắn hạn (bước 12)."""
     tracer = tracer or Tracer()  # không truyền → không ghi đâu cả
     specs = executor.registry.specs()
-    history: list[Any] = [llm.user_message(user_input)]
+    history_msgs: list[Any] = [
+        llm.user_message(text) if role == "user" else llm.assistant_message(text) for role, text in (history or [])
+    ]
+    history_msgs.append(llm.user_message(user_input))
     usage = Usage()
     all_calls: list[ToolCall] = []
 
     tracer.event("run_start", **(meta or {}), model=llm.model, input=user_input, system=system, tools=specs,
-                 max_steps=max_steps)
+                 max_steps=max_steps, prior_turns=len(history or []))
 
     for step in range(1, max_steps + 1):
         # Ghi CHÍNH XÁC thứ được gửi đi (system + tools đã có ở run_start).
-        tracer.event("llm_request", step=step, history=history)
+        tracer.event("llm_request", step=step, history=history_msgs)
         try:
-            resp = llm.generate(system, history, specs)
+            resp = llm.generate(system, history_msgs, specs)
         except Exception as e:
             # Lỗi API sau khi đã retry (hết quota, 5xx kéo dài…): vẫn đóng run trong trace rồi mới ném lỗi
             # lên — nếu không, trace có run_start mà không có run_end, không biết run đã chết ở đâu.
@@ -65,7 +70,7 @@ def run_react(
                      latency_ms=resp.latency_ms)
 
         # Nối nguyên vẹn lượt của model vào lịch sử TRƯỚC khi thêm kết quả tool.
-        history.append(resp.message)
+        history_msgs.append(resp.message)
 
         if not resp.tool_calls:  # không đề nghị Action nào → đây là câu trả lời cuối
             tracer.event("run_end", status="ok", answer=resp.text, steps=step, usage=usage)
@@ -73,7 +78,7 @@ def run_react(
 
         all_calls.extend(resp.tool_calls)
         results = [executor.execute(call, step=step, tracer=tracer) for call in resp.tool_calls]
-        history.append(llm.tool_results_message(results))
+        history_msgs.append(llm.tool_results_message(results))
 
     # Chặn lặp vô hạn / tốn tiền vô hạn: hết số bước thì dừng, KHÔNG để model tự quyết.
     answer = "Xin lỗi, tôi chưa hoàn thành được yêu cầu trong giới hạn số bước cho phép."

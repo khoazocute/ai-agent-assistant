@@ -17,6 +17,9 @@ class FakeLLM:
     def user_message(self, text: str) -> Any:
         return {"role": "user", "text": text}
 
+    def assistant_message(self, text: str) -> Any:
+        return {"role": "model", "text": text}
+
     def tool_results_message(self, results: list[ToolResult]) -> Any:
         return {"role": "tool", "results": results}
 
