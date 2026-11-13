@@ -4,7 +4,7 @@ Mẫu: [0000-template.md](0000-template.md). Quy trình: [ADR-0001](0001-dung-ad
 | ADR | Quyết định | Bước | Trạng thái |
 |---|---|---|---|
 | [0001](0001-dung-adr.md) | Ghi lại quyết định kiến trúc bằng ADR | 0 | Accepted |
-| 0002 | Chọn Claude Opus 5.5 + Anthropic SDK | 1 | Dự kiến |
+| [0002](0002-chon-llm-gemini.md) | Dùng Google Gemini qua SDK `google-genai` (đổi từ Claude) | 1 | Accepted |
 | 0003 | Tự viết vòng ReAct thay vì Tool Runner / LangChain / LangGraph | 2 | Dự kiến |
 | 0004 | Tool là lớp mỏng bọc service | 4 | Dự kiến |
 | 0005 | Phát triển theo eval, ngưỡng release prompt | 5 | Dự kiến |

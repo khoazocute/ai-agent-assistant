@@ -2,9 +2,9 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_0%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_1%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
-![llm](https://img.shields.io/badge/LLM-Claude_Opus_5.5-orange)
+![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
 > 🚧 Dự án đang được xây dựng **từng bước để vừa làm vừa học** — xem [Lộ trình](#lộ-trình). Ảnh demo sẽ được thêm ở bước 20.
 
@@ -24,7 +24,7 @@
 | **Supervisor** | Hiểu yêu cầu và giao việc cho đúng agent |
 | **Briefing** | Bản tin 7h sáng & tổng kết 21h tối |
 
-Thêm: đọc **ảnh hóa đơn** (Claude vision) và **tin nhắn thoại** (faster-whisper chạy local).
+Thêm: đọc **ảnh hóa đơn** (Gemini vision) và **tin nhắn thoại** (faster-whisper chạy local).
 
 ## 3. Kiến trúc
 
@@ -71,6 +71,7 @@ _Chưa chạy — sẽ có ở bước 9 (lần 1) và bước 19 (đầy đủ)
 | ADR | Quyết định | Trạng thái |
 |---|---|---|
 | [0001](docs/adr/0001-dung-adr.md) | Ghi lại quyết định kiến trúc bằng ADR | Accepted |
+| [0002](docs/adr/0002-chon-llm-gemini.md) | Dùng Google Gemini qua SDK `google-genai` | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
 
@@ -86,7 +87,13 @@ pip install -e "backend[dev]"
 copy .env.example .env      # rồi điền khoá vào .env
 pytest backend
 ```
-Hướng dẫn lấy Anthropic API key, Google OAuth, Telegram bot token sẽ được bổ sung ở các bước tương ứng.
+Gemini API key lấy tại https://aistudio.google.com/apikey (điền `GEMINI_API_KEY` trong `.env`).
+
+Thử bước 1 (gọi Gemini với một tool):
+```powershell
+python backend\experiments\step01_first_tool_call.py
+```
+Hướng dẫn Google OAuth, Telegram bot token sẽ được bổ sung ở các bước tương ứng.
 
 ## 8. Cấu trúc thư mục
 ```
@@ -103,7 +110,7 @@ frontend/          website React (bước 13)
 | Giai đoạn | Bước | Trạng thái |
 |---|---|---|
 | 0. Chuẩn bị | 0 · Khung dự án, tài liệu nền, ADR-0001 | ✅ |
-| 1. Hiểu ReAct từ gốc | 1 · Gọi Claude + 1 tool · 2 · Vòng ReAct + tracer · 3 · Tool registry | ⬜ |
+| 1. Hiểu ReAct từ gốc | 1 · Gọi Gemini + 1 tool ✅ · 2 · Vòng ReAct + tracer · 3 · Tool registry | 🔄 |
 | 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ⬜ |
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ⬜ |
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ⬜ |

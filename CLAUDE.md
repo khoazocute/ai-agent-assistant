@@ -1,6 +1,6 @@
 # CLAUDE.md — quy ước dự án
 
-Hệ thống multi-agent ReAct (Finance, Schedule, Email + Supervisor) dùng Claude API, FastAPI, React, Telegram.
+Hệ thống multi-agent ReAct (Finance, Schedule, Email + Supervisor) dùng Gemini API, FastAPI, React, Telegram.
 Kế hoạch tổng thể: `PLAN.md`. Thiết kế: `docs/`. Quyết định: `docs/adr/`.
 
 ## Chế độ làm việc: vừa làm vừa học
@@ -31,8 +31,15 @@ ruff check backend
 
 ## Quy ước code
 - Python 3.11+, type hints, pydantic v2. Định danh code bằng tiếng Anh; docs/comment bằng tiếng Việt.
-- Claude: model `claude-opus-5-5`, Anthropic Python SDK, `thinking={"type": "adaptive", "display": "summarized"}`, `effort` theo agent; không dùng `tool_choice` ép buộc (400 trên model này); tool `strict: true`.
+- LLM: **Google Gemini** qua SDK `google-genai` (ADR-0002), model từ `GEMINI_MODEL` (mặc định `gemini-3.5-flash`).
+  Tắt automatic function calling (tự điều khiển vòng ReAct), bật `ThinkingConfig(include_thoughts=True)`,
+  gửi lại nguyên vẹn `candidates[0].content`, luôn có timeout + retry (429/5xx).
+  Code gọi LLM chỉ nằm trong `harness/orchestration/llm_client.py` (giao diện trung lập provider).
 - Thời gian: múi giờ `Asia/Ho_Chi_Minh`; tiền: số nguyên VND.
+
+## Git
+- Commit message và mô tả PR **không** thêm dòng `Co-Authored-By: Claude …` hay bất kỳ ghi công AI nào — commit chỉ mang tên chủ dự án.
+- Mỗi bước kết thúc bằng commit + tag `step-XX` khi chủ dự án đồng ý.
 
 ## Bảo mật
 - Không commit `.env`, token, dữ liệu cá nhân (`backend/data/`).

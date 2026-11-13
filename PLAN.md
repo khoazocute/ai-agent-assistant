@@ -1,5 +1,8 @@
 # Kế hoạch: Hệ thống Multi-Agent ReAct (Chi tiêu · Lịch · Email) theo 7 Harness
 
+> **Cập nhật 2026-11-13 — đổi LLM sang Google Gemini** (`gemini-3.5-flash`, SDK `google-genai`), xem [ADR-0002](docs/adr/0002-chon-llm-gemini.md).
+> Các chi tiết viết riêng cho Claude trong kế hoạch (model `claude-opus-5-5`, `effort`, server-side fallback, prompt caching…) sẽ được thay bằng tương đương của Gemini khi tới bước tương ứng. Kiến trúc 7 harness và lộ trình giữ nguyên.
+
 ## Context
 Thư mục `c:\AI Agent` đang trống, nên dự án làm từ đầu. Mục tiêu là một trợ lý cá nhân gồm nhiều agent theo khung **ReAct** (Thought → Action → Observation), mỗi agent có nhiệm vụ và bộ tool riêng:
 1. **Finance Agent**: ghi và tổng hợp thu chi theo các danh mục ăn uống, di chuyển, mua sắm, giải trí, khác, thu nhập và phụ cấp gia đình. Thu nhập được trừ lại vào tổng chi.

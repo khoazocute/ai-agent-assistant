@@ -9,7 +9,7 @@ description = "Trợ lý cá nhân multi-agent ReAct: chi tiêu, lịch, email"
 requires-python = ">=3.11"
 # Chỉ thêm thư viện khi bước tương ứng cần đến (xem PLAN.md → Lộ trình).
 dependencies = [
-    "anthropic",          # bước 1: gọi Claude
+    "google-genai",       # bước 1: gọi Gemini (ADR-0002)
     "pydantic>=2",        # bước 3: schema cho tool
     "pydantic-settings",  # cấu hình từ .env
     "python-dotenv",
