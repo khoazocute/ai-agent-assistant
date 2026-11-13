@@ -56,6 +56,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m benchmarks.run")
     parser.add_argument("--agents", nargs="+", default=["single", "supervisor"])
     parser.add_argument("--suite", action="append", choices=ALL_SUITES)
+    parser.add_argument("--case", action="append", default=[], help="chỉ chạy các ca có id bắt đầu bằng …")
     parser.add_argument("--model")
     parser.add_argument("--delay", type=float, default=0)
     args = parser.parse_args()
@@ -64,7 +65,7 @@ def main() -> None:
     suites = args.suite or ALL_SUITES
     rows = []
     for agent in args.agents:
-        cases = cases_for(agent, suites)
+        cases = [c for c in cases_for(agent, suites) if not args.case or any(c.id.startswith(p) for p in args.case)]
         suite_of = {c.id: c.suite for c in cases}
         results = run_cases(cases, llm, agent, args.delay)
         save_results(results, {"agent": agent, "model": llm.model, "suites": suites, "benchmark": True,
@@ -76,7 +77,8 @@ def main() -> None:
 
     RESULTS_DIR.mkdir(exist_ok=True)
     out = RESULTS_DIR / f"{datetime.now(VN_TZ):%Y%m%d-%H%M%S}.json"
-    payload = {"ran_at": datetime.now(VN_TZ).isoformat(timespec="seconds"), "suites": suites, "rows": rows}
+    payload = {"ran_at": datetime.now(VN_TZ).isoformat(timespec="seconds"), "suites": suites, "rows": rows,
+               "cases": args.case or "all"}
     out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     from benchmarks.report import render_table, update_readme

@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_18%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_19%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -85,7 +85,13 @@ USER: Hôm nay là ngày mấy? Còn bao nhiêu ngày nữa đến Tết Dương
 So sánh **single-agent vs multi-agent** về chất lượng, độ trễ, chi phí. Bảng dưới được **sinh tự động** bởi `backend/benchmarks/report.py` — không điền tay.
 
 <!-- BENCH:START -->
-_Chưa có số liệu: benchmark cần ~150 request (vượt gói Gemini miễn phí). Chạy `cd backend; python -m benchmarks.run --delay 5` khi có billing — bảng sẽ tự xuất hiện ở đây._
+| Cấu hình | Model | Đạt | An toàn | Finance | Schedule | Email | Liên miền | p50 | p95 | Token vào/ca | Token ra/ca | Bước/ca | Chi phí/ca |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Single-agent | `gemini-3.5-flash-lite` | 2/2 (100%) | 1/1 (100%) | — | — | 1/1 (100%) | 1/1 (100%) | 3.1s | 6.9s | 17.184 | 175 | 3.0 | — |
+| Multi-agent (Supervisor) | `gemini-3.5-flash-lite` | 2/2 (100%) | 1/1 (100%) | — | — | 1/1 (100%) | 1/1 (100%) | 8.6s | 19.9s | 9.480 | 295 | 2.0 | — |
+
+_Chạy lúc 2026-11-14T00:31:06+07:00 · bộ ca: finance, schedule, email, mixed · sinh bởi `benchmarks/report.py`._
+_⚠ Chỉ chạy 2 ca chọn lọc (mix-001, eml-007) — số liệu minh hoạ, CHƯA đủ để kết luận (cần chạy đủ 38 ca)._
 <!-- BENCH:END -->
 
 ## 6. Quyết định thiết kế (ADR)
@@ -194,7 +200,7 @@ frontend/          website React (bước 13)
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ✅ |
 | 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ✅ |
 | 6. Mở rộng | 16 · Bản tin · 17 · Ảnh hóa đơn · 18 · Giọng nói | ✅ |
-| 7. Hoàn thiện | 19 · Benchmark đầy đủ · 20 · Docker, CI, demo, playbook | ⬜ |
+| 7. Hoàn thiện | 19 · Benchmark ✅ (chạy thử 2 ca; đủ 38 ca cần billing) · 20 · Docker, CI, demo, playbook | 🔄 |
 
 Nhật ký học từng bước: [docs/learning/](docs/learning/)
 

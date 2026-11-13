@@ -19,7 +19,7 @@ from app.config import ROOT
 README = ROOT / "README.md"
 RESULTS_DIR = Path(__file__).with_name("results")
 START, END = "<!-- BENCH:START -->", "<!-- BENCH:END -->"
-SUITE_LABEL = {"finance": "Finance", "schedule": "Schedule", "mixed": "Liên miền"}
+SUITE_LABEL = {"finance": "Finance", "schedule": "Schedule", "email": "Email", "mixed": "Liên miền"}
 
 
 def _pct(passed: int, total: int) -> str:
@@ -48,6 +48,9 @@ def render_table(payload: dict[str, Any]) -> str:
                  f"{r['avg_output_tokens']:,}".replace(",", "."), str(r["avg_steps"]), cost]
         lines.append("| " + " | ".join(cells) + " |")
     notes = [f"\n_Chạy lúc {payload['ran_at']} · bộ ca: {', '.join(suites)} · sinh bởi `benchmarks/report.py`._"]
+    if payload.get("cases", "all") != "all":
+        notes.append(f"_⚠ Chỉ chạy {rows[0]['cases'] if rows else 0} ca chọn lọc ({', '.join(payload['cases'])}) — "
+                     "số liệu minh hoạ, CHƯA đủ để kết luận (cần chạy đủ 38 ca)._")
     incomplete = [r["agent"] for r in rows if r["skipped"]]
     if incomplete:
         notes.append(f"_⚠ Chưa đủ ca (hết quota) với: {', '.join(incomplete)} — chưa đủ để kết luận._")

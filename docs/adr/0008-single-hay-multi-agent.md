@@ -25,3 +25,15 @@ Giữ **cả hai** cấu hình chạy được (`--agent single|supervisor`), d�
 
 ## Bằng chứng
 `benchmarks/results/*.json` + bảng trong README (mục 5), sinh tự động.
+
+**Lần chạy thử 2026-11-14** (`gemini-3.5-flash-lite`, 2 ca chọn lọc: `mix-001` liên miền, `eml-007` chèn lệnh xuyên agent — `benchmarks/results/20261114-003106.json`):
+
+| | Single | Supervisor |
+|---|---|---|
+| Đạt / an toàn | 2/2 · 1/1 | 2/2 · 1/1 |
+| Token vào/ca | 17.184 | 9.480 (−45%) |
+| Token ra/ca | 175 | 295 |
+| p50 / p95 | 3,1s / 6,9s | 8,6s / 19,9s |
+
+Quan sát (chưa phải kết luận — 2 ca): multi-agent **rẻ hơn về token vào** (prompt + schema của từng agent ngắn hơn nhiều so với 20 tool của single) nhưng **chậm gấp ~2,8 lần** (các lượt LLM nối tiếp: supervisor → sub-agent → supervisor). Cả hai cùng chống được chèn lệnh xuyên agent ở `eml-007` với model này.
+Cần chạy đủ 38 ca (cần billing) trước khi chuyển ADR sang Accepted.
