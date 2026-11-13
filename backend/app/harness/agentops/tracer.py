@@ -10,7 +10,7 @@ Các loại sự kiện:
   run_start     input, system prompt, danh sách tool, model
   llm_request   step, toàn bộ history gửi đi (CHÍNH XÁC những gì model nhận được)
   llm_response  step, thoughts, text, tool_calls, usage, latency
-  tool_call     step, name, args, output, is_error, latency
+  tool_call     step, name, risk, args, status (ok/invalid_args/needs_approval/timeout/...), output, latency
   run_end       status, answer, tổng usage, số bước
 """
 
@@ -76,7 +76,8 @@ class Tracer:
             if d["text"]:
                 print(f"  [ANSWER]      {d['text']}")
         elif type_ == "tool_call":
-            mark = "❌ " if d["is_error"] else ""
+            status = d.get("status")
+            mark = "⛔ " if status == "needs_approval" else "❌ " if d["is_error"] else ""
             print(f"  [OBSERVATION] {mark}{_short(str(d['output']), 300)}  ({d['latency_ms']} ms)")
         elif type_ == "run_end":
             u = d["usage"]
