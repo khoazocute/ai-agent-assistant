@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_5%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_6%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -96,6 +96,7 @@ _Chưa chạy — sẽ có ở bước 9 (lần 1) và bước 19 (đầy đủ)
 | [0003](docs/adr/0003-tu-viet-vong-react.md) | Tự viết vòng ReAct, `llm_client` trung lập provider, trace JSONL | Accepted |
 | [0004](docs/adr/0004-tool-la-lop-mong-boc-service.md) | Tool là lớp mỏng bọc service; con số do code tính | Accepted |
 | [0005](docs/adr/0005-phat-trien-theo-eval.md) | Phát triển theo eval; chấm bằng code; ngưỡng 90% + an toàn 100% | Accepted |
+| [0006](docs/adr/0006-tu-luu-trace-vao-db.md) | Tự lưu trace vào DB (agent_runs + agent_events), chi phí từ pricing.yaml | Accepted |
 
 Danh sách đầy đủ dự kiến: [docs/adr/README.md](docs/adr/README.md)
 
@@ -119,6 +120,7 @@ cd backend
 python -m app.cli chat              # nhắn: "trưa ăn phở 45k, đổ xăng 60k" · "tháng này tôi chi bao nhiêu?"
 python -m app.cli summary           # báo cáo tháng này — tính bằng code, không qua LLM
 python -m app.cli list              # giao dịch gần nhất
+python -m app.cli runs              # các lần chạy gần nhất · `run <id>` xem lại prompt + tool · `stats` thống kê
 python -m evals.run                 # eval 15 ca với Gemini thật (xem backend/evals/README.md)
 ```
 Dữ liệu lưu ở `backend/data/app.db` (SQLite, không commit).
@@ -147,7 +149,7 @@ frontend/          website React (bước 13)
 |---|---|---|
 | 0. Chuẩn bị | 0 · Khung dự án, tài liệu nền, ADR-0001 | ✅ |
 | 1. Hiểu ReAct từ gốc | 1 · Gọi Gemini + 1 tool · 2 · Vòng ReAct + tracer · 3 · Tool registry + executor | ✅ |
-| 2. Finance Agent | 4 · DB + service + CLI ✅ · 5 · Eval đầu tiên ✅ · 6 · Trace DB + chi phí | 🔄 |
+| 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ✅ |
 | 3. Điều phối | 7 · Schedule + planner · 8 · Single-agent · 9 · Multi-agent + benchmark | ⬜ |
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ⬜ |
 | 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ⬜ |

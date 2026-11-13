@@ -1,0 +1,14 @@
+# Bảng giá LLM để tính chi phí mỗi run (harness/agentops/cost.py).
+# Điền theo bảng giá chính thức: https://ai.google.dev/gemini-api/docs/pricing
+# Để trống (null) → chi phí hiển thị "—" thay vì một con số đoán bừa.
+# Gói miễn phí: chi phí thực = 0, nhưng vẫn nên điền giá trả phí để biết "nếu trả tiền thì tốn bao nhiêu".
+
+usd_to_vnd: 26000          # tỉ giá ước tính — cập nhật khi cần
+
+models:
+  gemini-3.5-flash:
+    input_per_1m_usd: null   # USD cho 1 triệu token đầu vào
+    output_per_1m_usd: null  # USD cho 1 triệu token đầu ra (gồm token suy nghĩ)
+  gemini-3.5-flash-lite:
+    input_per_1m_usd: null
+    output_per_1m_usd: null

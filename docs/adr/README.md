@@ -8,7 +8,7 @@ Mẫu: [0000-template.md](0000-template.md). Quy trình: [ADR-0001](0001-dung-ad
 | [0003](0003-tu-viet-vong-react.md) | Tự viết vòng ReAct (không AFC / LangGraph), `llm_client` trung lập provider, trace JSONL | 2 | Accepted |
 | [0004](0004-tool-la-lop-mong-boc-service.md) | Tool là lớp mỏng bọc service; con số do code tính | 4 | Accepted |
 | [0005](0005-phat-trien-theo-eval.md) | Phát triển theo eval; chấm bằng code; ngưỡng 90% + an toàn 100% | 5 | Accepted |
-| 0006 | Tự lưu trace vào DB thay vì Langfuse/LangSmith | 6 | Dự kiến |
+| [0006](0006-tu-luu-trace-vao-db.md) | Tự lưu trace vào DB thay vì Langfuse/LangSmith | 6 | Accepted |
 | 0007 | Thuật toán xếp lịch xác định thay vì để LLM xếp | 7 | Dự kiến |
 | 0008 | Single-agent hay multi-agent — theo số liệu benchmark | 9 | Dự kiến |
 | 0009 | Email là dữ liệu không tin cậy; lớp chống prompt injection | 10 | Dự kiến |

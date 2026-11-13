@@ -13,6 +13,9 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parents[2]
+CONFIG_DIR = ROOT / "backend" / "config"
+DATA_DIR = ROOT / "backend" / "data"
+TRACE_DIR = DATA_DIR / "traces"
 
 # Asia/Ho_Chi_Minh không có giờ mùa hè → +7 cố định (tránh phụ thuộc gói tzdata trên Windows).
 VN_TZ = timezone(timedelta(hours=7), "Asia/Ho_Chi_Minh")
