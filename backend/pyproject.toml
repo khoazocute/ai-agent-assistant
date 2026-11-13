@@ -14,6 +14,7 @@ dependencies = [
     "pydantic-settings",  # cấu hình từ .env
     "python-dotenv",
     "sqlalchemy>=2",      # bước 4: DB (SQLite khi học, PostgreSQL khi chạy thật)
+    "pyyaml",             # bước 5: ca eval (sau này: policies.yaml)
 ]
 
 [project.optional-dependencies]
@@ -28,6 +29,7 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]  # để test import được package evals/
 
 [tool.ruff]
 line-length = 120

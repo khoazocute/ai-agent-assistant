@@ -54,7 +54,8 @@ def build_finance_tools(session_factory: SessionFactory, today: Callable[[], dat
         = None,
         note: Annotated[str, Field(max_length=200, description="Mô tả ngắn, vd. 'phở bò', 'đổ xăng'")] = "",
     ) -> TransactionOut:
-        """Ghi MỘT khoản thu hoặc chi. Người dùng nhắc nhiều khoản thì gọi nhiều lần, mỗi khoản một lần."""
+        """Ghi MỘT khoản thu hoặc chi. Người dùng nhắc nhiều khoản thì gọi nhiều lần, mỗi khoản một lần.
+        Chỉ gọi khi đã biết rõ số tiền; chưa có số tiền thì hỏi người dùng, không gọi tool này."""
         return with_service(lambda svc: svc.add_transaction(amount_vnd, category, occurred_on, note))
 
     @agent_tool(risk=Risk.READ)
