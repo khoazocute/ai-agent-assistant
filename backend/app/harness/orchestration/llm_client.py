@@ -84,6 +84,15 @@ class LLMClient(Protocol):
     def generate(self, system: str, history: list[Any], tools: list[ToolSpec]) -> LLMResponse: ...
 
 
+class StructuredLLM(Protocol):
+    """LLM trích xuất dữ liệu có cấu trúc (JSON theo schema), có thể kèm ảnh — dùng cho workflow (bước 17)."""
+
+    model: str
+
+    def generate_json(self, system: str, prompt: str, schema: dict[str, Any], image: bytes | None = None,
+                      mime_type: str | None = None) -> tuple[dict[str, Any], LLMResponse]: ...
+
+
 # ---------- Adapter cho Google Gemini (ADR-0002) ----------
 
 
@@ -179,3 +188,31 @@ class GeminiClient:
         finish = candidate.finish_reason.name if candidate.finish_reason else "UNKNOWN"
         text = "".join(texts).strip()
         return LLMResponse(text, thoughts, calls, usage, finish, latency_ms, candidate.content)
+
+    def generate_json(self, system: str, prompt: str, schema: dict[str, Any], image: bytes | None = None,
+                      mime_type: str | None = None) -> tuple[dict[str, Any], LLMResponse]:
+        """Một lượt gọi KHÔNG tool, đầu ra bị ép đúng JSON schema (structured output) — model không thể
+        "trả lời tự do" hay làm theo chữ trong ảnh, chỉ có thể điền các trường đã định."""
+        import json
+
+        t = self._types
+        parts = [t.Part(text=prompt)]
+        if image is not None:
+            parts.insert(0, t.Part.from_bytes(data=image, mime_type=mime_type or "image/jpeg"))
+        config = t.GenerateContentConfig(
+            system_instruction=system, response_mime_type="application/json", response_json_schema=schema,
+            thinking_config=t.ThinkingConfig(include_thoughts=True),
+        )
+        start = time.perf_counter()
+        resp = self._client.models.generate_content(model=self.model, contents=[t.Content(role="user", parts=parts)],
+                                                    config=config)
+        latency_ms = round((time.perf_counter() - start) * 1000)
+        um = resp.usage_metadata
+        usage = Usage((um.prompt_token_count or 0) if um else 0, (um.candidates_token_count or 0) if um else 0,
+                      (um.thoughts_token_count or 0) if um else 0)
+        content = resp.candidates[0].content if resp.candidates else None
+        texts = [p.text for p in (content.parts if content else []) or [] if p.text and not p.thought]
+        thoughts = [p.text.strip() for p in (content.parts if content else []) or [] if p.thought and p.text]
+        raw = "".join(texts).strip()
+        data = json.loads(raw) if raw else {}
+        return data, LLMResponse(raw, thoughts, [], usage, "STOP", latency_ms, content)

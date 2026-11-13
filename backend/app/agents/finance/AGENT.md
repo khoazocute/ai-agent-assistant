@@ -18,7 +18,7 @@
 | `add_transaction(amount_vnd, category, date, note)` | write |
 | `update_transaction(id, ...)`, `set_budget(category, month, amount)` | write |
 | `list_transactions`, `get_summary(period)`, `get_category_breakdown`, `check_budget` | read |
-| `propose_transaction(...)` — từ ảnh/giọng nói, chờ xác nhận | write (đề xuất) |
+| Ảnh hóa đơn → `PendingAction(add_transaction)` qua [receipt workflow](../receipt/workflow.py) — chờ xác nhận | write (đề xuất) |
 | `delete_transaction(id)` | destructive → cần duyệt |
 
 ## KPI

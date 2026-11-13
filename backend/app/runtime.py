@@ -100,6 +100,18 @@ class Runtime:
         with session_scope(self.session_factory) as s:
             return CalendarSync(s, provider).run()
 
+    def propose_receipt(self, image: bytes, mime_type: str, channel: str):
+        """Ảnh hóa đơn → (đề xuất, yêu cầu xác nhận | None nếu không đọc được). Chưa ghi gì vào sổ."""
+        from app.agents.receipt.workflow import read_receipt
+        from app.config import today_vn
+
+        proposal = read_receipt(self.llm, image, mime_type, today_vn(), self.tracer(channel))
+        if not proposal.readable:
+            return proposal, None
+        pending = self.approvals.create("add_transaction", proposal.transaction_args(), agent="receipt",
+                                        risk="write", summary=proposal.summary())
+        return proposal, pending
+
     def approve(self, action_id: int, actor: str) -> PendingAction:
         return self.approvals.approve(action_id, actor, self.tool_catalog())
 

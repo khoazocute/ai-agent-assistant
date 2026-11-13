@@ -31,7 +31,8 @@ HELP = (
     "Mình là trợ lý cá nhân của bạn 👋\n"
     "• Chi tiêu: \"trưa ăn phở 45k\", \"tháng này tôi chi bao nhiêu?\"\n"
     "• Lịch: \"chiều mai 3h họp nhóm\", \"mai xếp 2 tiếng học tiếng Anh\"\n"
-    "• Email: \"có thư gì mới không?\", \"trả lời anh Minh là em đồng ý\"\n\n"
+    "• Email: \"có thư gì mới không?\", \"trả lời anh Minh là em đồng ý\"\n"
+    "• 📷 Gửi ảnh hóa đơn → mình đề xuất khoản chi để bạn bấm xác nhận\n\n"
     "/approvals — yêu cầu chờ duyệt · /trace — run gần nhất · /reset — quên ngữ cảnh · /help"
 )
 
@@ -124,6 +125,34 @@ def build_application(token: str, rt: Runtime, allowed: set[int]) -> Any:
             await update.message.reply_text(format_approval(pa), parse_mode=ParseMode.HTML,
                                             reply_markup=approval_buttons(pa))
 
+    async def on_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Ảnh hóa đơn → đề xuất khoản chi + nút ✅ Ghi / ❌ Bỏ (không ghi gì khi chưa bấm)."""
+        from app.agents.receipt.workflow import ReceiptError
+
+        if not await guard(update):
+            return
+        msg = update.message
+        if msg.photo:
+            tg_file, mime = await msg.photo[-1].get_file(), "image/jpeg"  # [-1] = độ phân giải cao nhất
+        else:
+            tg_file, mime = await msg.document.get_file(), msg.document.mime_type or ""
+        await context.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
+        image = bytes(await tg_file.download_as_bytearray())
+        try:
+            proposal, pending = await asyncio.to_thread(rt.propose_receipt, image, mime, "telegram")
+        except ReceiptError as e:
+            await msg.reply_text(f"⚠ {e}")
+            return
+        except Exception:
+            log.exception("Đọc hóa đơn lỗi")
+            await msg.reply_text("Xin lỗi, chưa đọc được ảnh lúc này (lỗi gọi AI). Thử lại sau nhé.")
+            return
+        if pending is None:
+            await msg.reply_text("Mình không đọc được tổng tiền trên ảnh này. Bạn nhắn số tiền giúp mình nhé.")
+            return
+        await msg.reply_text(format_approval(pending), parse_mode=ParseMode.HTML,
+                             reply_markup=approval_buttons(pending))
+
     async def on_approvals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not await guard(update):
             return
@@ -189,6 +218,7 @@ def build_application(token: str, rt: Runtime, allowed: set[int]) -> Any:
     app.add_handler(CommandHandler("approvals", on_approvals))
     app.add_handler(CommandHandler("trace", on_trace))
     app.add_handler(CallbackQueryHandler(on_callback))
+    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, on_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
 

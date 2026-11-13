@@ -32,6 +32,14 @@ class FakeLLM:
         return LLMResponse(text, ["thinking..."], calls, Usage(10, 5, 2), "STOP", 1,
                            message={"role": "model", "calls": calls, "text": text})
 
+    def generate_json(self, system: str, prompt: str, schema: dict, image: bytes | None = None,
+                      mime_type: str | None = None) -> tuple[dict, LLMResponse]:
+        self.seen_histories.append([{"role": "user", "text": prompt, "image": image is not None}])
+        turn = self.script.pop(0)
+        if isinstance(turn, Exception):
+            raise turn
+        return turn, LLMResponse("", [], [], Usage(500, 50, 10), "STOP", 1, message=None)
+
     def observations(self, turn: int = 1) -> list[ToolResult]:
         """Kết quả tool mà model nhìn thấy ở lượt `turn` (message cuối của history)."""
         return self.seen_histories[turn][-1]["results"]

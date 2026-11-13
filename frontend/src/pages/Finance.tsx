@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { api, toDateStr, vnd, type Category, type Summary, type Transaction } from "../api";
-import { ErrorBox, Stat } from "../components";
+import { api, toDateStr, vnd, type Approval, type Category, type Summary, type Transaction } from "../api";
+import { ApprovalCard, ErrorBox, Stat } from "../components";
 
 const PERIODS = [
   ["today", "Hôm nay"], ["this_week", "Tuần này"], ["this_month", "Tháng này"],
@@ -30,6 +30,17 @@ export default function Finance() {
   const remove = useMutation({
     mutationFn: (id: number) => api(`/api/finance/transactions/${id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries(),
+  });
+
+  const [receipt, setReceipt] = useState<{ approval: Approval | null; proposal: { warnings: string[] } } | null>(null);
+  const upload = useMutation({
+    mutationFn: (file: File) => {
+      const body = new FormData();
+      body.append("file", file);
+      return api<{ approval: Approval | null; proposal: { warnings: string[] } }>(
+        "/api/finance/receipts", { method: "POST", body });
+    },
+    onSuccess: setReceipt,
   });
 
   const chartData = summary.data?.by_category.filter((c) => c.kind === "expense")
@@ -81,6 +92,14 @@ export default function Finance() {
           </div>
           <button className="primary" disabled={!form.amount || add.isPending}>Thêm</button>
           <ErrorBox error={add.error} />
+          <label className="btn small" style={{ textAlign: "center" }}>
+            {upload.isPending ? "Đang đọc hóa đơn…" : "📷 Đọc ảnh hóa đơn"}
+            <input type="file" accept="image/*" hidden disabled={upload.isPending}
+              onChange={(e) => e.target.files?.[0] && upload.mutate(e.target.files[0])} />
+          </label>
+          <ErrorBox error={upload.error} />
+          {receipt && !receipt.approval && <div className="warn-box small">Không đọc được tổng tiền trên ảnh.</div>}
+          {receipt?.approval && <ApprovalCard approval={receipt.approval} />}
         </form>
       </div>
 

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -22,6 +23,20 @@ class TransactionIn(BaseModel):
     category: CategoryKey
     occurred_on: date | None = None
     note: str = Field("", max_length=200)
+
+
+@router.post("/receipts")
+async def upload_receipt(file: UploadFile, rt: Runtime = Depends(get_runtime)) -> dict:
+    from app.agents.receipt.workflow import MAX_IMAGE_BYTES, ReceiptError
+    from app.api.approvals import ApprovalOut
+
+    image = await file.read(MAX_IMAGE_BYTES + 1)
+    try:
+        proposal, pending = await run_in_threadpool(rt.propose_receipt, image, file.content_type or "", "web")
+    except ReceiptError as e:
+        raise HTTPException(400, str(e)) from e
+    return {"proposal": proposal.model_dump(mode="json"),
+            "approval": ApprovalOut.of(pending).model_dump(mode="json") if pending else None}
 
 
 @router.get("/categories")
