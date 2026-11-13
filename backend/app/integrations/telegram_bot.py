@@ -32,7 +32,8 @@ HELP = (
     "• Chi tiêu: \"trưa ăn phở 45k\", \"tháng này tôi chi bao nhiêu?\"\n"
     "• Lịch: \"chiều mai 3h họp nhóm\", \"mai xếp 2 tiếng học tiếng Anh\"\n"
     "• Email: \"có thư gì mới không?\", \"trả lời anh Minh là em đồng ý\"\n"
-    "• 📷 Gửi ảnh hóa đơn → mình đề xuất khoản chi để bạn bấm xác nhận\n\n"
+    "• 📷 Gửi ảnh hóa đơn → mình đề xuất khoản chi để bạn bấm xác nhận\n"
+    "• 🎙 Gửi tin nhắn thoại — mình nghe rồi làm như tin gõ\n\n"
     "/approvals — yêu cầu chờ duyệt · /trace — run gần nhất · /reset — quên ngữ cảnh · /help"
 )
 
@@ -153,6 +154,23 @@ def build_application(token: str, rt: Runtime, allowed: set[int]) -> Any:
         await msg.reply_text(format_approval(pending), parse_mode=ParseMode.HTML,
                              reply_markup=approval_buttons(pending))
 
+    async def on_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Tin thoại → chữ (faster-whisper trên máy) → xử lý như tin gõ; hiện lại câu đã nghe."""
+        from app.integrations.speech import default_transcriber
+
+        if not await guard(update):
+            return
+        voice = update.message.voice or update.message.audio
+        await context.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
+        audio = bytes(await (await voice.get_file()).download_as_bytearray())
+        heard, reply = await asyncio.to_thread(chat.handle_voice, "telegram", str(update.effective_chat.id), audio,
+                                               default_transcriber(), voice.duration or 0)
+        prefix = f"🎙 <i>Mình nghe: «{html.escape(heard)}»</i>\n\n" if heard else ""
+        await update.message.reply_text(prefix + format_reply(reply), parse_mode=ParseMode.HTML)
+        for pa in reply.approvals:
+            await update.message.reply_text(format_approval(pa), parse_mode=ParseMode.HTML,
+                                            reply_markup=approval_buttons(pa))
+
     async def on_approvals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not await guard(update):
             return
@@ -219,6 +237,7 @@ def build_application(token: str, rt: Runtime, allowed: set[int]) -> Any:
     app.add_handler(CommandHandler("trace", on_trace))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, on_photo))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, on_voice))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
 

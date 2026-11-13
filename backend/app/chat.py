@@ -57,5 +57,23 @@ class ChatService:
         return ChatReply(result.answer, tracer.run_id, result.status,
                          [c.name for c in result.tool_calls], sorted(new_approvals, key=lambda p: p.id))
 
+    def handle_voice(self, channel: str, external_id: str, audio: bytes, transcriber, duration_s: float = 0,
+                     suffix: str = ".ogg") -> tuple[str, ChatReply]:
+        """Tin thoại → chữ (local) → xử lý như tin nhắn gõ. Trả về (chữ đã nghe, câu trả lời).
+        Người dùng luôn thấy lại câu mình đã nói — nghe sai thì biết để nói/gõ lại."""
+        from app.integrations.speech import MAX_SECONDS
+
+        if transcriber is None:
+            return "", ChatReply('Chưa bật nhận giọng nói (cài `pip install -e "backend[voice]"`). '
+                                 "Bạn gõ giúp mình nhé.", status="disabled")
+        if duration_s > MAX_SECONDS:
+            return "", ChatReply(f"Tin thoại dài quá {MAX_SECONDS} giây — bạn chia nhỏ giúp mình nhé.",
+                                 status="rejected")
+        transcript = transcriber.transcribe(audio, suffix)
+        if not transcript.usable:
+            return transcript.text, ChatReply("Mình nghe không rõ. Bạn nói lại chậm hơn hoặc gõ giúp mình nhé.",
+                                              status="unclear")
+        return transcript.text, self.handle(channel, external_id, transcript.text)
+
     def reset(self, channel: str, external_id: str) -> None:
         self.memory.reset(self.memory.conversation_id(channel, external_id))

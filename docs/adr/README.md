@@ -17,5 +17,5 @@ Mẫu: [0000-template.md](0000-template.md). Quy trình: [ADR-0001](0001-dung-ad
 | [0012](0012-fastapi-react-sqlite.md) | FastAPI + React cùng domain; SQLite khi học, PostgreSQL khi chạy thật | 13 | Accepted |
 | [0013](0013-lich-db-dong-bo-google-calendar.md) | Lịch lưu DB + đồng bộ hai chiều Google Calendar | 15 | Accepted |
 | [0014](0014-workflow-cho-ban-tin-va-hoa-don.md) | Workflow thay cho agent cho bản tin và đọc hóa đơn | 16 | Accepted |
-| 0015 | Speech-to-text local bằng faster-whisper | 18 | Dự kiến |
+| [0015](0015-speech-to-text-local.md) | Speech-to-text local bằng faster-whisper | 18 | Accepted |
 | [0016](0016-sse-cap-nhat-realtime.md) | SSE cho cập nhật realtime (thay vì WebSocket/polling) | 14 | Accepted |

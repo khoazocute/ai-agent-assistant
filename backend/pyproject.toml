@@ -29,6 +29,9 @@ google = [                # bước 10, 15: Gmail + Google Calendar (OAuth)
     "google-auth-oauthlib",
     "cryptography",       # mã hoá token OAuth (Fernet)
 ]
+voice = [                 # bước 18: chuyển giọng nói → chữ NGAY TRÊN MÁY (ADR-0015)
+    "faster-whisper",
+]
 dev = [
     "pytest>=8",
     "ruff",
