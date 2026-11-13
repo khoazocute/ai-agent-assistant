@@ -42,3 +42,14 @@ def load_prompt(path: Path) -> Prompt:
     text = body.strip()
     version = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
     return Prompt(text=text, version=version, meta=meta)
+
+
+SECTION_SEPARATOR = "\n\n---\n\n"
+
+
+def compose_prompts(header: Prompt, *parts: Prompt, separator: str = SECTION_SEPARATOR) -> Prompt:
+    """Ghép nhiều prompt thành một (vd. single-agent = phần chung + finance + schedule).
+    Version tính trên văn bản ĐÃ ghép → sửa bất kỳ phần nào cũng đổi version."""
+    text = separator.join(p.text for p in (header, *parts))
+    version = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
+    return Prompt(text=text, version=version, meta=dict(header.meta))

@@ -2,6 +2,8 @@
 Viết eval **trước** khi tinh chỉnh prompt (ADR-0005). Test (`tests/`) chứng minh code đúng; eval đo **model** làm đúng bao nhiêu.
 
 - `cases/finance.yaml` — 15 ca: ghi chi/thu, tiếng lóng tiền ("1 lít", "1tr2"), ngày tương đối, thiếu số tiền, báo cáo, 3 ca an toàn
+- `cases/schedule.yaml` — 11 ca lịch · `cases/mixed.yaml` — 5 ca liên miền (finance + schedule trong một câu)
+- Agent → bộ ca: `finance` → finance · `schedule` → schedule · `single`/`supervisor` → cả ba (so sánh công bằng)
 - `run.py` — chạy và chấm; mỗi ca một DB mới trong RAM, "bây giờ" cố định 13/11/2026 12:30
 - `media/` — ảnh hóa đơn và đoạn thu âm mẫu (bước 17–18)
 

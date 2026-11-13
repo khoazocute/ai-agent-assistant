@@ -11,7 +11,7 @@ from app.db.session import SessionFactory
 from app.harness.orchestration.llm_client import LLMClient
 from app.harness.tools.executor import ToolExecutor
 
-AGENT_NAMES = ("finance", "schedule")
+AGENT_NAMES = ("finance", "schedule", "single")
 
 
 def build_agent(name: str, llm: LLMClient, session_factory: SessionFactory, now: Callable[[], datetime] = now_vn,
@@ -24,4 +24,8 @@ def build_agent(name: str, llm: LLMClient, session_factory: SessionFactory, now:
         from app.agents.schedule.agent import ScheduleAgent
 
         return ScheduleAgent(llm, session_factory, now, make_executor)
+    if name == "single":
+        from app.agents.single.agent import SingleAgent
+
+        return SingleAgent(llm, session_factory, now, make_executor)
     raise ValueError(f"Không có agent '{name}'. Có: {', '.join(AGENT_NAMES)}")

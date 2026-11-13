@@ -2,7 +2,7 @@
 
 > Hệ thống nhiều AI agent theo khung **ReAct** giúp quản lý **chi tiêu**, **lịch sinh hoạt** và **email** hằng ngày — điều khiển qua **Telegram**, quản lý trên **website**, và **truy vết được chính xác prompt + tool** mà agent đã dùng ở từng bước.
 
-![status](https://img.shields.io/badge/trạng_thái-bước_7%2F20-blue)
+![status](https://img.shields.io/badge/trạng_thái-bước_8%2F20-blue)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
 
@@ -153,7 +153,7 @@ frontend/          website React (bước 13)
 | 0. Chuẩn bị | 0 · Khung dự án, tài liệu nền, ADR-0001 | ✅ |
 | 1. Hiểu ReAct từ gốc | 1 · Gọi Gemini + 1 tool · 2 · Vòng ReAct + tracer · 3 · Tool registry + executor | ✅ |
 | 2. Finance Agent | 4 · DB + service + CLI · 5 · Eval đầu tiên · 6 · Trace DB + chi phí | ✅ |
-| 3. Điều phối | 7 · Schedule + planner ✅ · 8 · Single-agent · 9 · Multi-agent + benchmark | 🔄 |
+| 3. Điều phối | 7 · Schedule + planner ✅ · 8 · Single-agent ✅ · 9 · Multi-agent + benchmark | 🔄 |
 | 4. An toàn | 10 · Gmail + chống injection · 11 · Duyệt + policy + audit | ⬜ |
 | 5. Dùng thật | 12 · Telegram + memory · 13 · Web · 14 · Trace UI + realtime · 15 · GCal | ⬜ |
 | 6. Mở rộng | 16 · Bản tin · 17 · Ảnh hóa đơn · 18 · Giọng nói | ⬜ |

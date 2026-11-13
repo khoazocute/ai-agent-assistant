@@ -96,6 +96,14 @@ class ToolRegistry:
     def names(self) -> list[str]:
         return list(self._tools)
 
+    def tools(self) -> list[RegisteredTool]:
+        return list(self._tools.values())
+
+    @classmethod
+    def merge(cls, *registries: ToolRegistry) -> ToolRegistry:
+        """Gộp nhiều bộ tool (vd. single-agent). Trùng tên → lỗi ngay, không âm thầm ghi đè."""
+        return cls(t for r in registries for t in r.tools())
+
     def specs(self) -> list[ToolSpec]:
         # Thứ tự xác định (theo thứ tự đăng ký) → prompt giống hệt nhau giữa các lần gọi (tốt cho cache).
         return [t.spec for t in self._tools.values()]
