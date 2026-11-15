@@ -258,7 +258,7 @@ def main() -> None:
         print("⚠ TELEGRAM_ALLOWED_CHAT_IDS trống: bot sẽ từ chối mọi người và báo chat_id để bạn thêm vào .env.")
     app = build_application(settings.telegram_bot_token, Runtime.create(), allowed)
     print("Bot đang chạy (long polling). Ctrl+C để dừng.")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=False)  # giữ lại tin nhắn gửi lúc máy tắt, xử lý khi bật lại
 
 
 if __name__ == "__main__":

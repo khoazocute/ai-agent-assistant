@@ -120,13 +120,15 @@ async def _start_telegram(rt: Runtime):
     bot = build_application(settings.telegram_bot_token, rt, settings.allowed_chat_ids)
     await bot.initialize()
     await bot.start()
+    # KHÔNG drop_pending_updates: máy có thể tắt nhiều giờ (laptop cá nhân, không phải server 24/7) — tin
+    # nhắn gửi lúc đó phải được Telegram giữ lại và xử lý khi bật máy lại, không được bỏ qua lặng lẽ.
     if settings.telegram_mode == "polling":
-        await bot.updater.start_polling(drop_pending_updates=True)
+        await bot.updater.start_polling(drop_pending_updates=False)
     else:
         if not settings.public_base_url.startswith("https://") or len(settings.telegram_webhook_secret) < 16:
             raise RuntimeError("Webhook cần PUBLIC_BASE_URL https://… và TELEGRAM_WEBHOOK_SECRET ≥ 16 ký tự")
         await bot.bot.set_webhook(f"{settings.public_base_url.rstrip('/')}/api/telegram/webhook",
-                                  secret_token=settings.telegram_webhook_secret, drop_pending_updates=True)
+                                  secret_token=settings.telegram_webhook_secret, drop_pending_updates=False)
     log.info("Telegram bot đang chạy (%s) trong tiến trình web", settings.telegram_mode)
     return bot
 
