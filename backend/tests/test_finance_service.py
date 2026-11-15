@@ -96,9 +96,18 @@ def test_delete(svc):
     ("this_month", (date(2026, 11, 1), date(2026, 11, 30))),
     ("last_month", (date(2026, 10, 1), date(2026, 10, 31))),
     ("this_year", (date(2026, 1, 1), date(2026, 12, 31))),
+    ("all_time", (date.min, date.max)),
 ])
 def test_resolve_period(period, expected):
     assert resolve_period(period, TODAY) == expected
+
+
+def test_all_time_includes_transactions_outside_usual_periods(svc):
+    # Bài học thật 15/11: ảnh hóa đơn đọc ra ngày tháng trước → "Tháng này" không hiện, dễ tưởng mất dữ liệu.
+    svc.add_transaction(500_000, "khac", date(2020, 1, 1))
+    svc.add_transaction(10_000, "an_uong", date(2021, 6, 15))
+    r = svc.get_summary(*resolve_period("all_time", TODAY))
+    assert r.total_expense_vnd == 510_000 and r.transaction_count == 2
 
 
 def test_resolve_period_across_year_and_february():

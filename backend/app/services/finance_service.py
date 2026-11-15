@@ -30,7 +30,8 @@ DEFAULT_CATEGORIES: dict[str, tuple[str, CategoryKind]] = {
 }
 assert set(DEFAULT_CATEGORIES) == set(get_args(CategoryKey)), "CategoryKey và DEFAULT_CATEGORIES phải khớp"
 
-Period = Literal["today", "yesterday", "this_week", "last_week", "this_month", "last_month", "this_year"]
+Period = Literal["today", "yesterday", "this_week", "last_week", "this_month", "last_month", "this_year",
+                "all_time"]
 
 
 class FinanceError(ValueError):
@@ -96,6 +97,10 @@ def resolve_period(period: Period, today: date) -> tuple[date, date]:
         return end.replace(day=1), end
     if period == "this_year":
         return date(today.year, 1, 1), date(today.year, 12, 31)
+    if period == "all_time":
+        # Hóa đơn cũ / ngày agent đọc sai có thể rơi ra ngoài mọi khoảng thông dụng (bài học thật 15/11:
+        # ảnh hóa đơn đọc ra tháng trước, "Tháng này" không hiện) → luôn có lối xem TOÀN BỘ để đối chiếu.
+        return date.min, date.max
     raise FinanceError(f"Không hiểu khoảng thời gian '{period}'.")
 
 

@@ -6,7 +6,7 @@ import { ApprovalCard, ErrorBox, Stat } from "../components";
 
 const PERIODS = [
   ["today", "Hôm nay"], ["this_week", "Tuần này"], ["this_month", "Tháng này"],
-  ["last_month", "Tháng trước"], ["this_year", "Năm nay"],
+  ["last_month", "Tháng trước"], ["this_year", "Năm nay"], ["all_time", "Tất cả"],
 ] as const;
 
 export default function Finance() {
