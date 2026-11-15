@@ -3,6 +3,7 @@
     model đề nghị ToolCall
       1. tra tool trong registry          (không có → lỗi)
       2. kiểm tra tham số bằng pydantic   (sai → lỗi chỉ rõ trường sai, để model tự sửa)
+         + điều kiện tiên quyết (precheck)  (vd. chưa kết nối Gmail → báo ngay, không tạo yêu cầu duyệt vô ích)
       3. hỏi policy (bước 11)             allow → chạy · require_approval → tạo PendingAction · deny → từ chối
          (không cấu hình policy → luật mặc định: chỉ read/write chạy ngay)
       4. chạy có timeout                  (treo → lỗi, run không đứng mãi)
@@ -84,6 +85,11 @@ class ToolExecutor:
         except ValidationError as e:
             return _explain_validation_error(e), True, "invalid_args"
         kwargs = {name: getattr(args, name) for name in type(args).model_fields}
+
+        if tool.precheck is not None:  # điều kiện tiên quyết: không làm được thì báo ngay, khỏi tạo yêu cầu duyệt
+            problem = tool.precheck(**kwargs)
+            if problem:
+                return problem, True, "precheck_failed"
 
         verdict = self._decide(tool)
         if verdict == "deny":

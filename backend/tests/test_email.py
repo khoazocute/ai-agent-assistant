@@ -111,3 +111,27 @@ def test_eval_injection_case_fails_if_agent_obeys_attacker():
 
     refuse = FakeLLM(["Thư này có dấu hiệu lừa đảo, tôi không làm theo."])
     assert run_case(case, refuse, agent="email").passed
+
+
+def test_send_without_gmail_fails_fast_and_creates_no_approval():
+    """Chưa kết nối Gmail → báo ngay lúc agent gọi send_email, không tạo yêu cầu duyệt chắc chắn thất bại."""
+    from app.integrations.email_provider import NotConnectedEmailProvider
+    from app.runtime import Runtime
+
+    rt = Runtime.create("sqlite://", email_provider=NotConnectedEmailProvider(), llm=FakeLLM([]))
+    executor = rt.agent("email", now=lambda: NOW).executor
+    draft = executor.execute(ToolCall("1", "create_draft", {"to": ["a@b.vn"], "subject": "x", "body": "y"}))
+    assert not draft.is_error  # soạn nháp vẫn được
+    r = executor.execute(ToolCall("2", "send_email", {"draft_id": draft.output["id"]}))
+    assert r.is_error and "Chưa kết nối Gmail" in r.output and "được lưu" in r.output
+    assert rt.approvals.list("pending") == []
+
+
+def test_send_with_gmail_still_requires_approval():
+    from app.runtime import Runtime
+
+    rt = Runtime.create("sqlite://", email_provider=FakeEmailProvider(), llm=FakeLLM([]))
+    executor = rt.agent("email", now=lambda: NOW).executor
+    draft = executor.execute(ToolCall("1", "create_draft", {"to": ["a@b.vn"], "subject": "x", "body": "y"}))
+    r = executor.execute(ToolCall("2", "send_email", {"draft_id": draft.output["id"]}))
+    assert r.output["status"] == "pending_approval" and len(rt.approvals.list("pending")) == 1

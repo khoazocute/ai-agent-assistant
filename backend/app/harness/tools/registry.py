@@ -44,6 +44,9 @@ class RegisteredTool:
     args_model: type[BaseModel]
     # Mô tả cho NGƯỜI DUYỆT (bước 11): nhận cùng tham số với fn, trả câu mô tả điều sẽ xảy ra.
     describe: Callable[..., str] | None = None
+    # Điều kiện tiên quyết, chạy TRƯỚC policy/duyệt: trả câu lỗi nếu hành động chắc chắn không làm được
+    # (vd. chưa kết nối Gmail) → không tạo yêu cầu duyệt vô ích. None = được.
+    precheck: Callable[..., str | None] | None = None
 
     @property
     def spec(self) -> ToolSpec:
@@ -55,7 +58,8 @@ class RegisteredTool:
 
 
 def agent_tool(
-    *, risk: Risk, name: str | None = None, timeout_s: float = 10.0, describe: Callable[..., str] | None = None
+    *, risk: Risk, name: str | None = None, timeout_s: float = 10.0, describe: Callable[..., str] | None = None,
+    precheck: Callable[..., str | None] | None = None,
 ) -> Callable[[Callable[..., Any]], RegisteredTool]:
     """Biến một hàm có type hint + docstring thành tool. Lỗi khai báo bị báo NGAY lúc import."""
 
@@ -76,7 +80,7 @@ def agent_tool(
 
         # extra="forbid": model bịa thêm tham số → bị từ chối, không lặng lẽ bỏ qua.
         args_model = create_model(f"{tool_name}_args", __config__=ConfigDict(extra="forbid"), **fields)
-        return RegisteredTool(tool_name, description, risk, timeout_s, fn, args_model, describe)
+        return RegisteredTool(tool_name, description, risk, timeout_s, fn, args_model, describe, precheck)
 
     return decorator
 

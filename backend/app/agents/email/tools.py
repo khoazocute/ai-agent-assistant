@@ -15,7 +15,7 @@ from pydantic import Field
 from app.config import now_vn
 from app.db.session import SessionFactory, session_scope
 from app.harness.tools.registry import Risk, ToolRegistry, agent_tool
-from app.integrations.email_provider import EmailProvider
+from app.integrations.email_provider import EmailProvider, NotConnectedEmailProvider
 from app.services.email_service import DraftOut, EmailDetail, EmailListItem, EmailService, SyncResult
 
 T = TypeVar("T")
@@ -78,7 +78,15 @@ def build_email_tools(session_factory: SessionFactory, provider: EmailProvider,
         warn = f"\n⚠ Có thể chứa thông tin nhạy cảm: {', '.join(d.pii_warnings)}" if d.pii_warnings else ""
         return f"Gửi thư (bản nháp #{d.id})\nTới: {', '.join(d.to)}\nTiêu đề: {d.subject}\n---\n{d.body}{warn}"
 
-    @agent_tool(risk=Risk.EXTERNAL, timeout_s=60, describe=describe_send)
+    def precheck_send(draft_id: int) -> str | None:
+        # Chưa kết nối Gmail → báo NGAY lúc agent định gửi, thay vì tạo yêu cầu duyệt mà bấm Duyệt xong mới
+        # lỗi (bài học khi chạy thật 15/11).
+        if isinstance(provider, NotConnectedEmailProvider):
+            return (f"{NotConnectedEmailProvider.MESSAGE} Bản nháp #{draft_id} vẫn được lưu — "
+                    "người dùng có thể chép nội dung để tự gửi.")
+        return None
+
+    @agent_tool(risk=Risk.EXTERNAL, timeout_s=60, describe=describe_send, precheck=precheck_send)
     def send_email(draft_id: Annotated[int, Field(description="id bản nháp từ create_draft")]) -> DraftOut:
         """Gửi một bản nháp. LUÔN cần người dùng duyệt — tool sẽ tạo yêu cầu duyệt thay vì gửi ngay."""
         return with_service(lambda s: s.send_draft(draft_id))
