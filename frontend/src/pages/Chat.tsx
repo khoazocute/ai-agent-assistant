@@ -13,7 +13,12 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  useEffect(() => {
+    // Thân khối { } để KHÔNG trả về kết quả của scrollIntoView() — effect rút gọn kiểu
+    // `() => x.scrollIntoView(...)` vô tình trả nguyên giá trị đó; nếu nó khác rỗng, React coi
+    // là hàm dọn dẹp và gọi lại lúc unmount → "TypeError: ... is not a function" (lỗi đã gặp thật).
+    bottom.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const send = useMutation({
     mutationFn: (message: string) => api<ChatReply>("/api/chat", { method: "POST", json: { message } }),

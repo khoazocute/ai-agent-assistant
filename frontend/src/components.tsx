@@ -2,14 +2,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Component, useState, type ErrorInfo, type ReactNode } from "react";
 
 /** Lỗi khi hiển thị → hiện thông báo + nút tải lại thay vì trang trắng (React gỡ cả cây khi có lỗi chưa bắt). */
-export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state = { error: null as Error | null };
+type State = { error: Error | null; componentStack: string };
+
+export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
+  state: State = { error: null, componentStack: "" };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    this.setState({ componentStack: info.componentStack ?? "" });
     console.error("Lỗi giao diện:", error, info.componentStack);
   }
 
@@ -19,9 +22,19 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
       <div className="card stack" style={{ margin: 24 }}>
         <h2>Giao diện gặp lỗi</h2>
         <div className="error-box mono">{this.state.error.message}</div>
-        <pre className="box small">{this.state.error.stack?.split("\n").slice(0, 6).join("\n")}</pre>
+        {/* "Component stack" nói đúng component nào đang hiển thị khi lỗi xảy ra — không bị minify
+            che tên như stack trace JS thường (nhờ esbuild.keepNames trong vite.config.ts). */}
+        {this.state.componentStack && (
+          <div className="small">
+            <strong>Xảy ra trong:</strong>
+            <pre className="box small">{this.state.componentStack.trim()}</pre>
+          </div>
+        )}
+        <pre className="box small">{this.state.error.stack?.split("\n").slice(0, 8).join("\n")}</pre>
         <div className="row">
-          <button className="primary" onClick={() => this.setState({ error: null })}>Thử lại</button>
+          <button className="primary" onClick={() => this.setState({ error: null, componentStack: "" })}>
+            Thử lại
+          </button>
           <button onClick={() => window.location.reload()}>Tải lại trang</button>
         </div>
       </div>
