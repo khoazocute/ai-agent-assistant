@@ -37,4 +37,7 @@ def make_llm(model: str | None = None):
     settings = get_settings()
     if not settings.gemini_api_key:
         raise RuntimeError("Thiếu GEMINI_API_KEY trong .env")
-    return GeminiClient(api_key=settings.gemini_api_key, model=model or settings.gemini_model)
+    # Chỉ định model cụ thể (eval/benchmark `--model`) → KHÔNG dự phòng: đổi model giữa chừng làm sai phép so sánh.
+    fallbacks = [] if model else settings.fallback_models
+    return GeminiClient(api_key=settings.gemini_api_key, model=model or settings.gemini_model,
+                        fallback_models=fallbacks)

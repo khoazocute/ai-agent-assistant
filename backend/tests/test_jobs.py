@@ -99,7 +99,10 @@ def test_quiet_hours():
 def test_cleanup_purges_old_traces():
     rt = seeded_runtime(["ok"])
     asyncio.run(Jobs(rt, LogNotifier(), now=lambda: MORNING).brief("morning"))
-    later = MORNING + timedelta(days=91)
+    # Trace ghi theo đồng hồ THẬT → mốc "91 ngày sau" phải tính từ giờ thật, không từ NOW cố định
+    # (trước đây tính từ NOW → test chỉ đúng nếu chạy đúng ngày 13–14/11).
+    from app.config import now_vn
+    later = now_vn() + timedelta(days=91)
     result = asyncio.run(Jobs(rt, LogNotifier(), now=lambda: later).cleanup())
     assert result["runs_deleted"] == 1 and recent_runs(rt.session_factory) == []
 

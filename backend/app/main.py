@@ -31,6 +31,7 @@ log = logging.getLogger(__name__)
 def create_app(runtime: Runtime | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        _configure_logging()
         rt = app.state.runtime = runtime or Runtime.create()
         rt.bus.bind(asyncio.get_running_loop())
         bot = app.state.telegram = await _start_telegram(rt)
@@ -128,6 +129,18 @@ async def _start_telegram(rt: Runtime):
                                   secret_token=settings.telegram_webhook_secret, drop_pending_updates=True)
     log.info("Telegram bot đang chạy (%s) trong tiến trình web", settings.telegram_mode)
     return bot
+
+
+def _configure_logging() -> None:
+    """uvicorn chỉ cấu hình log của chính nó → log của app (bot, job) bị nuốt. Bật cho logger "app"."""
+    app_logger = logging.getLogger("app")
+    if not app_logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        app_logger.addHandler(handler)
+        app_logger.setLevel(logging.INFO)
+    # httpx ghi URL mỗi request — URL Telegram chứa TOKEN BOT → không bao giờ để lọt vào log.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def _start_jobs(rt: Runtime):

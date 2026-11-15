@@ -21,7 +21,7 @@ Production có domain: đặt sau reverse proxy HTTPS (Caddy/nginx), `.env`: `CO
 ## Sự cố thường gặp
 | Triệu chứng | Nguyên nhân | Xử lý |
 |---|---|---|
-| "Hết lượt gọi AI hôm nay" / `429 RESOURCE_EXHAUSTED` | Gói Gemini miễn phí ~20 request/ngày/model | Bật billing ở Google AI Studio, hoặc đổi `GEMINI_MODEL` sang model khác (quota riêng), hoặc chờ reset (~15h giờ VN) |
+| "Hết lượt gọi AI hôm nay" / `429 RESOURCE_EXHAUSTED` | Gói Gemini miễn phí ~20 request/ngày/model | `GEMINI_FALLBACK_MODELS` (tự chuyển model khi 429 — mỗi model quota riêng); `DEFAULT_AGENT=single` (ít lượt gọi hơn); bật billing; hoặc chờ reset (~15h giờ VN) |
 | Trả lời chậm 30–60s, log `503`/`504` | Gemini quá tải | Tự retry (5 lần, backoff); nếu kéo dài, đổi model |
 | Bot không trả lời | Sai token / chat_id chưa trong allowlist / chạy 2 bot cùng token | Nhắn `/start` xem chat_id; chỉ chạy MỘT tiến trình polling |
 | "Chưa kết nối Google" | Chưa OAuth / token hết hạn bị thu hồi | `python -m app.integrations.google_auth` |

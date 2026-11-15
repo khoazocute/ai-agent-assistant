@@ -26,6 +26,12 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash"
+    # Model dự phòng khi model chính hết quota (429), cách nhau bằng dấu phẩy — mỗi model có quota riêng
+    gemini_fallback_models: str = ""
+
+    @property
+    def fallback_models(self) -> list[str]:
+        return [m.strip() for m in self.gemini_fallback_models.split(",") if m.strip()]
     database_url: str = "sqlite:///backend/data/app.db"
     fernet_key: str = ""  # mã hoá token OAuth (bước 10)
     default_agent: str = "supervisor"  # agent trả lời Telegram/web (ADR-0008)

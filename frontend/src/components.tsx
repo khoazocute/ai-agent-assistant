@@ -1,5 +1,33 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { Component, useState, type ErrorInfo, type ReactNode } from "react";
+
+/** Lỗi khi hiển thị → hiện thông báo + nút tải lại thay vì trang trắng (React gỡ cả cây khi có lỗi chưa bắt). */
+export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Lỗi giao diện:", error, info.componentStack);
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="card stack" style={{ margin: 24 }}>
+        <h2>Giao diện gặp lỗi</h2>
+        <div className="error-box mono">{this.state.error.message}</div>
+        <pre className="box small">{this.state.error.stack?.split("\n").slice(0, 6).join("\n")}</pre>
+        <div className="row">
+          <button className="primary" onClick={() => this.setState({ error: null })}>Thử lại</button>
+          <button onClick={() => window.location.reload()}>Tải lại trang</button>
+        </div>
+      </div>
+    );
+  }
+}
 import { api, fmtTime, type Approval } from "./api";
 
 export function Stat({ label, value, tone }: { label: string; value: string; tone?: "income" }) {

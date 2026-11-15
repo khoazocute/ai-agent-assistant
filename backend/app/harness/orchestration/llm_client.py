@@ -97,30 +97,67 @@ class StructuredLLM(Protocol):
 
 
 class GeminiClient:
+    """Adapter Gemini có MODEL DỰ PHÒNG: model đang dùng hết quota (429) → chuyển sang model kế tiếp.
+
+    Mỗi model Gemini có quota riêng (gói miễn phí ~20 request/ngày/model) → 3 model ≈ 60 request/ngày.
+    Model hết quota bị "nghỉ" `cooldown_s` giây rồi mới thử lại (quota có thể đã hồi).
+    429 KHÔNG nằm trong danh sách SDK tự retry: hết quota ngày thì thử lại cùng model chỉ phí ~40 giây.
+    """
+
     def __init__(
         self,
         api_key: str | None = None,
         model: str | None = None,
         timeout_ms: int = 45_000,
         attempts: int = 5,
+        fallback_models: list[str] | None = None,
+        cooldown_s: float = 3600,
     ) -> None:
         # Import ở đây để code/test không dùng Gemini (vd. FakeLLM) không cần cài SDK.
         from google import genai
-        from google.genai import types
+        from google.genai import errors, types
 
         self._types = types
-        self.model = model or os.environ.get("GEMINI_MODEL") or "gemini-3.5-flash"
+        self._errors = errors
+        primary = model or os.environ.get("GEMINI_MODEL") or "gemini-3.5-flash"
+        self.models = list(dict.fromkeys([primary, *(fallback_models or [])]))  # bỏ trùng, giữ thứ tự
+        self.model = primary  # model của lượt gọi gần nhất — ghi vào trace
+        self.cooldown_s = cooldown_s
+        self._exhausted_until: dict[str, float] = {}
         self._client = genai.Client(
             api_key=api_key or os.environ["GEMINI_API_KEY"],
             http_options=types.HttpOptions(
                 timeout=timeout_ms,
-                # Chỉ thử lại lỗi TẠM THỜI. 400/404 là lỗi do yêu cầu sai — thử lại vô ích.
+                # Chỉ thử lại lỗi TẠM THỜI của máy chủ. 400/404 do yêu cầu sai — thử lại vô ích;
+                # 429 (hết quota) được xử lý bằng cách đổi model (_with_fallback), không thử lại cùng model.
                 retry_options=types.HttpRetryOptions(
                     attempts=attempts, initial_delay=2.0, max_delay=20.0,
-                    http_status_codes=[429, 500, 503, 504],
+                    http_status_codes=[500, 503, 504],
                 ),
             ),
         )
+
+    def _with_fallback(self, call: Any) -> Any:
+        """Gọi `call(model)` lần lượt theo danh sách model; chỉ 429 mới chuyển model, lỗi khác ném ra ngay."""
+        now = time.monotonic()
+        candidates = [m for m in self.models if self._exhausted_until.get(m, 0) <= now]
+        last_quota_error: Exception | None = None
+        for model in candidates:
+            try:
+                result = call(model)
+            except self._errors.ClientError as e:
+                if e.code != 429:
+                    raise
+                self._exhausted_until[model] = time.monotonic() + self.cooldown_s
+                last_quota_error = e
+                continue
+            self.model = model
+            return result
+        if last_quota_error is not None:
+            raise last_quota_error
+        # Mọi model đều đang "nghỉ" → báo hết quota (code 429 để kênh hiển thị câu thân thiện).
+        raise self._errors.ClientError(429, {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED",
+                                                       "message": f"Tất cả model đã hết quota: {self.models}"}})
 
     def user_message(self, text: str) -> Any:
         t = self._types
@@ -159,7 +196,8 @@ class GeminiClient:
             automatic_function_calling=t.AutomaticFunctionCallingConfig(disable=True),
         )
         start = time.perf_counter()
-        resp = self._client.models.generate_content(model=self.model, contents=history, config=config)
+        resp = self._with_fallback(
+            lambda model: self._client.models.generate_content(model=model, contents=history, config=config))
         latency_ms = round((time.perf_counter() - start) * 1000)
 
         um = resp.usage_metadata
@@ -204,8 +242,9 @@ class GeminiClient:
             thinking_config=t.ThinkingConfig(include_thoughts=True),
         )
         start = time.perf_counter()
-        resp = self._client.models.generate_content(model=self.model, contents=[t.Content(role="user", parts=parts)],
-                                                    config=config)
+        contents = [t.Content(role="user", parts=parts)]
+        resp = self._with_fallback(
+            lambda model: self._client.models.generate_content(model=model, contents=contents, config=config))
         latency_ms = round((time.perf_counter() - start) * 1000)
         um = resp.usage_metadata
         usage = Usage((um.prompt_token_count or 0) if um else 0, (um.candidates_token_count or 0) if um else 0,

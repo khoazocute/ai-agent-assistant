@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { api, type Approval } from "./api";
+import { ErrorBoundary } from "./components";
 import { useLiveUpdates } from "./live";
 import Calendar from "./pages/Calendar";
 import Chat from "./pages/Chat";
@@ -49,6 +50,7 @@ function Shell() {
         </nav>
       </aside>
       <main className="main">
+        <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/chat" element={<Chat />} />
@@ -60,6 +62,7 @@ function Shell() {
           <Route path="/ops" element={<Ops />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </ErrorBoundary>
       </main>
     </div>
   );
