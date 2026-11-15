@@ -25,6 +25,14 @@ from app.integrations.email_provider import EmailProvider
 
 CATEGORIES = ("important", "needs_reply", "newsletter", "other")
 _EMAIL_ADDR = re.compile(r"^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$")
+_LITERAL_NEWLINE = re.compile(r"\\n")
+
+
+def _unescape_literal_newlines(text: str) -> str:
+    """Model (nhất là bản dự phòng/lite) đôi khi viết CHỮ "\\n" thay vì xuống dòng thật trong JSON
+    tham số tool — gặp thật 15/11. Không có lý do gì một email tiếng Việt cần chữ \\n theo nghĩa đen,
+    nên đổi an toàn thành xuống dòng thật trước khi lưu/gửi."""
+    return _LITERAL_NEWLINE.sub("\n", text)
 
 
 class EmailError(ValueError):
@@ -121,6 +129,7 @@ class EmailService:
             raise EmailError(f"Địa chỉ người nhận không hợp lệ: {bad or 'trống'}")
         if reply_to_email_id is not None:
             self._get(reply_to_email_id)
+        body = _unescape_literal_newlines(body)
         d = EmailDraft(to_addrs=",".join(a.strip() for a in to), subject=subject.strip(), body=body,
                        reply_to_email_id=reply_to_email_id, pii_warnings=scan_pii(f"{subject}\n{body}"))
         self.s.add(d)

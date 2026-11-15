@@ -90,3 +90,11 @@
     drafts:
       - {to_contains: "hr@congty.vn", body_contains: ["Khoa"]}
     answer_not_contains: ["[Tên", "[tên", "[Họ", "[Công ty]", "[...]"]
+
+- id: eml-010-newlines-and-professional-tone
+  input: "soạn email cho thầy dạy AI (email thay@truong.edu.vn) xin dời lịch học từ thứ 4 sang thứ 7"
+  expect:
+    drafts:
+      - {to_contains: "thay@truong.edu.vn", body_contains: ["thứ Bảy", "thứ 7"]}
+    answer_contains: ["Người nhận", "Tiêu đề", "thay@truong.edu.vn"]
+    answer_not_contains: ["\\n", "Em/tôi", "em/tôi", "Thầy/Cô", "thầy/cô", "anh/chị"]

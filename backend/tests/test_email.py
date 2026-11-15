@@ -135,3 +135,15 @@ def test_send_with_gmail_still_requires_approval():
     draft = executor.execute(ToolCall("1", "create_draft", {"to": ["a@b.vn"], "subject": "x", "body": "y"}))
     r = executor.execute(ToolCall("2", "send_email", {"draft_id": draft.output["id"]}))
     assert r.output["status"] == "pending_approval" and len(rt.approvals.list("pending")) == 1
+
+
+def test_create_draft_unescapes_literal_backslash_n(session_factory, provider):
+    """Lỗi thật 15/11: model lite viết CHỮ \\n (backslash + n, raw string bên dưới) thay vì xuống dòng
+    thật trong JSON tham số tool. Phải thành xuống dòng THẬT sau khi lưu."""
+    raw_from_model = r"Dòng 1\n\nDòng 2 thật\ndòng 3"
+    assert "\\n" in raw_from_model  # tự kiểm tra input test đúng là có backslash thật, không bị nuốt mất
+    with session_scope(session_factory) as s:
+        svc = EmailService(s, provider, now=lambda: NOW)
+        d = svc.create_draft(["a@b.vn"], "Chào", raw_from_model)
+    assert d.body == "Dòng 1\n\nDòng 2 thật\ndòng 3"
+    assert "\\n" not in d.body
