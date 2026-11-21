@@ -5,7 +5,8 @@
 ![status](https://img.shields.io/badge/trạng_thái-20%2F20_bước-brightgreen)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![llm](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-4285F4)
-![tests](https://img.shields.io/badge/tests-181-brightgreen)
+![tests](https://img.shields.io/badge/tests-195-brightgreen)
+![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 Xây **từng bước để vừa làm vừa học** (20 bước, mỗi bước một git tag `step-XX` + nhật ký trong [docs/learning/](docs/learning/)) — tự viết vòng ReAct, không dùng LangChain/LangGraph, để thấy rõ cơ chế.
 
@@ -19,7 +20,7 @@ Xây **từng bước để vừa làm vừa học** (20 bước, mỗi bước 
 ## 2. Tính năng
 | Thành phần | Việc làm |
 |---|---|
-| **Finance Agent** | Ghi thu/chi (ăn uống, di chuyển, mua sắm, giải trí, khác, thu nhập, phụ cấp gia đình); tổng chi, tổng thu, **chi ròng = chi − thu** — mọi con số do code tính |
+| **Finance Agent** | Ghi thu/chi (ăn uống, di chuyển, mua sắm, giải trí, khác, thu nhập, phụ cấp gia đình); tổng chi, tổng thu, **số dư = thu − chi** — mọi con số do code tính |
 | **Schedule Agent** | Tạo/dời/xem sự kiện (báo trùng giờ), tìm giờ trống, đề xuất xếp việc → bạn đồng ý mới áp dụng; đồng bộ 2 chiều Google Calendar |
 | **Email Agent** | Kéo thư Gmail, tóm tắt, phân loại, soạn nháp; gửi **chỉ sau khi duyệt**; cảnh báo thư lừa đảo/chèn lệnh |
 | **Supervisor** | Hiểu yêu cầu (kể cả nhiều mảng trong một câu) và giao cho đúng agent; nhớ ngữ cảnh 6 lượt + điều bạn nhờ nhớ |
@@ -121,7 +122,7 @@ git clone <repo-url>; cd <repo>
 python -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -e "backend[dev]"
 copy .env.example .env          # điền GEMINI_API_KEY (+ WEB_PASSWORD, JWT_SECRET để dùng web)
-pytest backend                  # 181 test, không cần mạng
+pytest backend                  # 195 test, không cần mạng
 ```
 
 **Thử trên terminal** (trong `backend/`):
@@ -175,7 +176,7 @@ backend/app/
   integrations/ Gmail, Google Calendar, Telegram, speech    api/  FastAPI routers
   jobs/         APScheduler    runtime.py  chat.py  realtime.py  notify.py  cli.py  main.py
 backend/config/ policies.yaml · pricing.yaml      backend/evals/  38 ca eval   backend/benchmarks/
-backend/tests/  181 test      frontend/  React + Vite      docs/  thiết kế · ADR · runbook · playbook · learning
+backend/tests/  195 test      frontend/  React + Vite      docs/  thiết kế · ADR · runbook · playbook · learning
 ```
 
 ## 9. Lộ trình (hoàn thành)
