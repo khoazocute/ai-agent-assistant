@@ -97,11 +97,16 @@ class StructuredLLM(Protocol):
 
 
 class GeminiClient:
-    """Adapter Gemini có MODEL DỰ PHÒNG: model đang dùng hết quota (429) → chuyển sang model kế tiếp.
+    """Adapter Gemini có MODEL DỰ PHÒNG: model đang dùng hết quota (429) hoặc đang quá tải (500/503/504,
+    gặp thật 18/11 — "high demand") → chuyển sang model kế tiếp.
 
     Mỗi model Gemini có quota riêng (gói miễn phí ~20 request/ngày/model) → 3 model ≈ 60 request/ngày.
-    Model hết quota bị "nghỉ" `cooldown_s` giây rồi mới thử lại (quota có thể đã hồi).
+    Model hết quota bị "nghỉ" `cooldown_s` giây (mặc định 1 giờ) rồi mới thử lại (quota có thể đã hồi).
+    Model đang quá tải tạm thời chỉ "nghỉ" `overload_cooldown_s` giây (mặc định 1 phút) — khác lý do
+    nên khác thời gian nghỉ: quá tải thường hết rất nhanh, không nên né model chính cả giờ vì nó.
     429 KHÔNG nằm trong danh sách SDK tự retry: hết quota ngày thì thử lại cùng model chỉ phí ~40 giây.
+    500/503/504 ĐÃ được SDK tự thử lại vài lần trên cùng model trước khi rơi tới đây — đổi model lúc
+    này là thử một máy chủ/model khác, không phải lặp lại việc SDK vừa làm.
     """
 
     def __init__(
@@ -112,6 +117,7 @@ class GeminiClient:
         attempts: int = 5,
         fallback_models: list[str] | None = None,
         cooldown_s: float = 3600,
+        overload_cooldown_s: float = 60,
     ) -> None:
         # Import ở đây để code/test không dùng Gemini (vd. FakeLLM) không cần cài SDK.
         from google import genai
@@ -123,7 +129,9 @@ class GeminiClient:
         self.models = list(dict.fromkeys([primary, *(fallback_models or [])]))  # bỏ trùng, giữ thứ tự
         self.model = primary  # model của lượt gọi gần nhất — ghi vào trace
         self.cooldown_s = cooldown_s
+        self.overload_cooldown_s = overload_cooldown_s
         self._exhausted_until: dict[str, float] = {}
+        self._last_error: dict[str, Exception] = {}  # vì sao model đang "nghỉ" — để báo đúng lý do
         self._client = genai.Client(
             api_key=api_key or os.environ["GEMINI_API_KEY"],
             http_options=types.HttpOptions(
@@ -138,24 +146,34 @@ class GeminiClient:
         )
 
     def _with_fallback(self, call: Any) -> Any:
-        """Gọi `call(model)` lần lượt theo danh sách model; chỉ 429 mới chuyển model, lỗi khác ném ra ngay."""
+        """Gọi `call(model)` lần lượt theo danh sách model; 429 (hết quota) và 500/503/504 (quá tải) đều
+        chuyển sang model kế tiếp, mỗi lý do nghỉ một thời gian khác nhau; lỗi khác ném ra ngay."""
         now = time.monotonic()
         candidates = [m for m in self.models if self._exhausted_until.get(m, 0) <= now]
-        last_quota_error: Exception | None = None
+        last_error: Exception | None = None
         for model in candidates:
             try:
                 result = call(model)
-            except self._errors.ClientError as e:
-                if e.code != 429:
+            except self._errors.APIError as e:
+                if e.code == 429:
+                    self._exhausted_until[model] = time.monotonic() + self.cooldown_s
+                elif e.code in (500, 503, 504):
+                    self._exhausted_until[model] = time.monotonic() + self.overload_cooldown_s
+                else:
                     raise
-                self._exhausted_until[model] = time.monotonic() + self.cooldown_s
-                last_quota_error = e
+                self._last_error[model] = e
+                last_error = e
                 continue
             self.model = model
             return result
-        if last_quota_error is not None:
-            raise last_quota_error
-        # Mọi model đều đang "nghỉ" → báo hết quota (code 429 để kênh hiển thị câu thân thiện).
+        if last_error is not None:
+            raise last_error
+        # candidates rỗng NGAY TỪ ĐẦU (mọi model còn đang "nghỉ" từ lượt gọi trước, vòng for không chạy
+        # lần nào) → ném lại đúng lỗi đã khiến model đó bị cho nghỉ, đừng fabricate "hết quota": có thể
+        # tất cả đang quá tải (503/504) chứ không phải hết quota ngày, hai lý do cần báo khác nhau.
+        for model in self.models:
+            if model in self._last_error:
+                raise self._last_error[model]
         raise self._errors.ClientError(429, {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED",
                                                        "message": f"Tất cả model đã hết quota: {self.models}"}})
 
