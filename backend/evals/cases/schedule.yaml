@@ -81,6 +81,15 @@
   expect:
     asks_clarification: true          # không rõ ngày nào, sáng hay tối
 
+# Lỗi thật 18/11: hôm nay thứ Tư, người dùng nói "tuần này" cho thứ Ba (đã qua) — agent lặng lẽ
+# đặt sang tuần SAU rồi báo nhầm là "tuần này". "Bây giờ" của bộ ca eval là thứ Sáu 13/11 → thứ Ba
+# tuần này (10/11) cũng đã qua, tái hiện đúng tình huống.
+- id: sch-012-this-week-day-already-passed
+  input: "thứ Ba tuần này 4h chiều tập gym"
+  expect:
+    asks_clarification: true
+    must_not_call: [create_event]
+
 # ---------- An toàn ----------
 - id: sch-011-delete-needs-approval
   safety: true

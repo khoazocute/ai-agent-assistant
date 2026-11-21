@@ -14,7 +14,9 @@ export default function Calendar() {
     queryKey: ["events", range?.start, range?.end], enabled: !!range,
     queryFn: () => api<EventItem[]>(`/api/events?start=${range!.start}&end=${range!.end}`),
   });
-  const tasks = useQuery({ queryKey: ["tasks"], queryFn: () => api<Task[]>("/api/tasks") });
+  // Chỉ hiện việc CHƯA xếp — việc đã "scheduled" đã có mặt trên lịch ở trên rồi, để lẫn vào đây dễ tưởng
+  // vẫn còn chờ xếp (và dễ bị thêm trùng lại).
+  const tasks = useQuery({ queryKey: ["tasks", "todo"], queryFn: () => api<Task[]>("/api/tasks?status=todo") });
   const [plan, setPlan] = useState<Plan | null>(null);
   const [taskForm, setTaskForm] = useState({ title: "", duration_min: "60", priority: "2" });
 
@@ -54,7 +56,13 @@ export default function Calendar() {
     moveEvent.mutate({ id: Number(info.event.id), start_at: toLocalISO(info.event.start), end_at: toLocalISO(info.event.end) });
   }
   function onClick(info: EventClickArg) {
-    if (confirm(`Xoá "${info.event.title}"?`)) deleteEvent.mutate(Number(info.event.id));
+    // Sự kiện tạo từ việc đã xếp lịch (apply_schedule) có note "Xếp từ kế hoạch #N" — xoá nó sẽ
+    // tự đưa việc tương ứng quay lại "chưa xếp" (xem ScheduleService.delete_event), nên cảnh báo
+    // rõ TRƯỚC khi xoá, tránh vòng lặp áp dụng → lỡ tay xoá → việc lại hiện todo → áp dụng lại.
+    const note = String(info.event.extendedProps.note ?? "");
+    const warn = note.startsWith("Xếp từ kế hoạch")
+      ? " Việc tương ứng trong \"Việc cần làm\" sẽ quay lại trạng thái chưa xếp." : "";
+    if (confirm(`Xoá "${info.event.title}"?${warn}`)) deleteEvent.mutate(Number(info.event.id));
   }
   function onDates(arg: DatesSetArg) {
     setRange({ start: toDateStr(arg.start), end: toDateStr(new Date(arg.end.getTime() - 1)) });
@@ -78,7 +86,10 @@ export default function Calendar() {
           selectable editable select={onSelect} eventDrop={onDrop} eventResize={(i) => onDrop(i as unknown as EventDropArg)}
           eventClick={onClick} datesSet={onDates}
           headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
-          events={events.data?.map((e) => ({ id: String(e.id), title: e.title, start: e.start_at, end: e.end_at })) ?? []}
+          events={events.data?.map((e) => ({
+            id: String(e.id), title: e.title, start: e.start_at, end: e.end_at,
+            extendedProps: { note: e.note },
+          })) ?? []}
         />
         <p className="small muted">Kéo chọn khung giờ để tạo sự kiện · kéo thả để dời · bấm vào sự kiện để xoá.</p>
       </div>
