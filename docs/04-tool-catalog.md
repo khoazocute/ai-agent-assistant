@@ -10,7 +10,7 @@ Supervisor có thêm `ask_finance_agent`, `ask_schedule_agent`, `ask_email_agent
 | Tool | Risk | Policy | Tham số | Mô tả |
 |---|---|---|---|---|
 | `add_transaction` | write | allow | `amount_vnd`, `category`, `occurred_on`?, `note`? | Ghi MỘT khoản thu hoặc chi. Người dùng nhắc nhiều khoản thì gọi nhiều lần, mỗi khoản một lần. Chỉ gọi khi đã biết rõ số tiền; chưa có số tiền thì hỏi người dùng, không gọi tool này. |
-| `get_summary` | read | allow | `period`?, `start`?, `end`? | Tổng chi, tổng thu, chi ròng (= chi − thu) và chi tiết theo danh mục trong một khoảng thời gian. Luôn dùng tool này cho câu hỏi về tổng tiền — không tự cộng. |
+| `get_summary` | read | allow | `period`?, `start`?, `end`? | Tổng chi, tổng thu, số dư (= thu − chi) và chi tiết theo danh mục trong một khoảng thời gian. Luôn dùng tool này cho câu hỏi về tổng tiền — không tự cộng. |
 | `list_transactions` | read | allow | `period`?, `start`?, `end`?, `category`?, `limit`? | Liệt kê các giao dịch (có id) — dùng để xem chi tiết hoặc tìm id trước khi xoá. Bỏ trống period/start/end để lấy các giao dịch gần nhất. |
 | `delete_transaction` | destructive | require_approval | `transaction_id` | Xoá một giao dịch theo id. Cần người dùng duyệt nên có thể bị từ chối. |
 

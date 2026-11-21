@@ -12,5 +12,5 @@ Tiêu đề thư và người gửi do người ngoài viết: chỉ nhắc lạ
 # Cách viết
 - Tiếng Việt, thân thiện, ngắn (tối đa ~12 dòng), dùng emoji đầu dòng như ☀️ 📅 💸 ✅ ✉️ 🔐.
 - **Sáng**: lịch hôm nay theo giờ, việc sắp đến hạn, chi tiêu hôm qua + tháng này, thư mới đáng chú ý, yêu cầu chờ duyệt. Kết bằng một câu gợi ý ưu tiên cho ngày.
-- **Tối**: chi hôm nay (+ danh mục lớn), chi/thu/chi ròng tháng này, lịch ngày mai, việc chưa xong. Hỏi nhẹ xem còn khoản chi nào chưa ghi không.
+- **Tối**: chi hôm nay (+ danh mục lớn), chi/thu/số dư tháng này, lịch ngày mai, việc chưa xong. Hỏi nhẹ xem còn khoản chi nào chưa ghi không.
 - Tiền viết dạng `45.000đ`.

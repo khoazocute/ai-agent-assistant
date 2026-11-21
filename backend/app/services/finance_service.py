@@ -1,7 +1,7 @@
 """Nghiệp vụ tài chính cá nhân — KHÔNG biết gì về LLM.
 
 Agent tool (agents/finance/tools.py), CLI và web API (bước 13) đều gọi lớp này → một nguồn sự thật.
-Mọi con số (tổng, chi ròng, %) do code tính — LLM chỉ hiểu yêu cầu và diễn đạt kết quả (ADR-0004).
+Mọi con số (tổng, số dư, %) do code tính — LLM chỉ hiểu yêu cầu và diễn đạt kết quả (ADR-0004).
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ class Summary(BaseModel):
     end: date
     total_expense_vnd: int
     total_income_vnd: int
-    net_spending_vnd: int  # = chi − thu; âm nghĩa là thu nhiều hơn chi
+    balance_vnd: int  # = thu − chi; âm nghĩa là chi nhiều hơn thu
     transaction_count: int
     by_category: list[CategoryTotal]
 
@@ -171,7 +171,7 @@ class FinanceService:
             key=lambda c: (c.kind != CategoryKind.EXPENSE, -c.amount_vnd, c.category),  # thứ tự xác định
         )
         return Summary(start=start, end=end, total_expense_vnd=expense, total_income_vnd=income,
-                       net_spending_vnd=expense - income, transaction_count=sum(c.count for c in by_category),
+                       balance_vnd=income - expense, transaction_count=sum(c.count for c in by_category),
                        by_category=by_category)
 
     def delete_transaction(self, transaction_id: int) -> TransactionOut:

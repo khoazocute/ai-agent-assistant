@@ -73,7 +73,7 @@ def cmd_summary(period: str) -> None:
         sign = "+" if c.kind == "income" else "-"
         print(f"  {sign} {c.category_name:<18}{vnd(c.amount_vnd):>14}{pct}")
     print(f"  Tổng chi {vnd(r.total_expense_vnd)} · Tổng thu {vnd(r.total_income_vnd)} · "
-          f"Chi ròng {vnd(r.net_spending_vnd)}")
+          f"Số dư {vnd(r.balance_vnd)}")
 
 
 def cmd_list(limit: int) -> None:

@@ -56,7 +56,7 @@ export interface Summary {
   end: string;
   total_expense_vnd: number;
   total_income_vnd: number;
-  net_spending_vnd: number;
+  balance_vnd: number;
   transaction_count: number;
   by_category: CategoryTotal[];
 }

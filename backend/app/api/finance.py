@@ -45,8 +45,12 @@ def categories(s: Session = Depends(db)) -> list[dict]:
 
 
 @router.get("/summary")
-def summary(period: Period = "this_month", s: Session = Depends(db)) -> Summary:
+def summary(period: Period = "this_month", start: date | None = None, end: date | None = None,
+           s: Session = Depends(db)) -> Summary:
     svc = FinanceService(s)
+    # start/end (lọc theo ngày tuỳ ý trên giao diện) được ưu tiên hơn period khi người dùng chọn cả hai.
+    if start and end:
+        return svc.get_summary(start, end)
     return svc.get_summary(*resolve_period(period, svc.today()))
 
 

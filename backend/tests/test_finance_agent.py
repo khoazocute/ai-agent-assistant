@@ -51,7 +51,7 @@ def test_summary_tool_resolves_period_in_code(session_factory):
     call(ex, "add_transaction", amount_vnd=200_000, category="mua_sam", occurred_on="2026-11-02")
     call(ex, "add_transaction", amount_vnd=50_000, category="thu_nhap")
     r = call(ex, "get_summary", period="this_month")
-    assert (r.output["start"], r.output["end"], r.output["net_spending_vnd"]) == ("2026-11-01", "2026-11-30", 150_000)
+    assert (r.output["start"], r.output["end"], r.output["balance_vnd"]) == ("2026-11-01", "2026-11-30", -150_000)
     assert call(ex, "get_summary").is_error  # không có period lẫn start/end → lỗi rõ ràng
 
 

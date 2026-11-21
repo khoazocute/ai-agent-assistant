@@ -46,7 +46,7 @@ def test_brief_data_is_computed_by_code():
         d = BriefingService(s, lambda: MORNING).collect("morning", pending_approvals=2)
     assert [e.title for e in d.events_today] == ["Họp nhóm"] and d.events_tomorrow[0].start == "09:00"
     assert (d.spent_yesterday_vnd, d.spent_today_vnd) == (120000, 45000)
-    assert (d.month_expense_vnd, d.month_income_vnd, d.month_net_vnd) == (165000, 2000000, -1835000)
+    assert (d.month_expense_vnd, d.month_income_vnd, d.month_balance_vnd) == (165000, 2000000, 1835000)
     assert [t.title for t in d.tasks_due_soon] == ["Báo cáo thuế"]
     assert [e.suspicious for e in d.new_emails] == [True, False]  # thư đáng ngờ được đánh dấu
     text = fallback_text(d)

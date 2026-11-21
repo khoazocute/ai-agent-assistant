@@ -12,13 +12,19 @@ const PERIODS = [
 export default function Finance() {
   const qc = useQueryClient();
   const [period, setPeriod] = useState<string>("this_month");
-  const summary = useQuery({ queryKey: ["summary", period],
-    queryFn: () => api<Summary>(`/api/finance/summary?period=${period}`) });
+  // Lọc theo ngày tuỳ chọn (vd. xem đúng một ngày) — khi có đủ cả hai, ghi đè lựa chọn ở dropdown period.
+  const [customRange, setCustomRange] = useState<{ start: string; end: string } | null>(null);
+  const query = customRange ? `start=${customRange.start}&end=${customRange.end}` : `period=${period}`;
+  const summary = useQuery({ queryKey: ["summary", query],
+    queryFn: () => api<Summary>(`/api/finance/summary?${query}`) });
   const txs = useQuery({ queryKey: ["transactions", summary.data?.start, summary.data?.end],
     enabled: !!summary.data,
     queryFn: () => api<Transaction[]>(
       `/api/finance/transactions?limit=200&start=${summary.data!.start}&end=${summary.data!.end}`) });
   const categories = useQuery({ queryKey: ["categories"], queryFn: () => api<Category[]>("/api/finance/categories") });
+  // Luôn hiện chi hôm nay, tách khỏi bộ lọc ở trên — không đổi dù đang xem tháng/ngày khác.
+  const todaySpend = useQuery({ queryKey: ["summary", "today"],
+    queryFn: () => api<Summary>("/api/finance/summary?period=today") });
 
   const [form, setForm] = useState({ amount: "", category: "an_uong", occurred_on: toDateStr(new Date()), note: "" });
   const add = useMutation({
@@ -50,14 +56,34 @@ export default function Finance() {
     <>
       <div className="spread">
         <h1>Chi tiêu</h1>
-        <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-          {PERIODS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
+        <div className="row">
+          <select value={period} disabled={!!customRange} onChange={(e) => setPeriod(e.target.value)}>
+            {PERIODS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          <input type="date" value={customRange?.start ?? ""} aria-label="Từ ngày"
+            onChange={(e) => {
+              const start = e.target.value;
+              if (!start) return setCustomRange(null);
+              // Đến ngày không được trước Từ ngày — kẹp lại thay vì để gửi khoảng ngược lên API.
+              const end = customRange?.end && customRange.end >= start ? customRange.end : start;
+              setCustomRange({ start, end });
+            }} />
+          <input type="date" value={customRange?.end ?? ""} aria-label="Đến ngày"
+            onChange={(e) => {
+              const end = e.target.value;
+              if (!end) return setCustomRange(null);
+              const start = customRange?.start && customRange.start <= end ? customRange.start : end;
+              setCustomRange({ start, end });
+            }} />
+          {customRange && <button className="small" onClick={() => setCustomRange(null)}>Xoá lọc ngày</button>}
+        </div>
       </div>
+      <ErrorBox error={summary.error} />
       <div className="grid">
+        <Stat label="Chi hôm nay" value={vnd(todaySpend.data?.total_expense_vnd)} />
         <Stat label="Tổng chi" value={vnd(summary.data?.total_expense_vnd)} />
         <Stat label="Tổng thu" value={vnd(summary.data?.total_income_vnd)} tone="income" />
-        <Stat label="Chi ròng (chi − thu)" value={vnd(summary.data?.net_spending_vnd)} />
+        <Stat label="Số dư (thu − chi)" value={vnd(summary.data?.balance_vnd)} />
       </div>
 
       <div className="grid section">

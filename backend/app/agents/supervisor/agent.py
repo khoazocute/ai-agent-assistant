@@ -57,7 +57,7 @@ class SupervisorAgent(BaseAgent):
         # Sub-agent có thể chạy nhiều bước + retry khi Gemini quá tải → timeout dài hơn tool thường.
         @agent_tool(risk=Risk.READ, timeout_s=300)
         def ask_finance_agent(request: RequestArg) -> dict[str, Any]:
-            """Giao việc thu chi cho Finance Agent: ghi khoản chi/thu, hỏi tổng tiền, chi ròng, xoá giao dịch."""
+            """Giao việc thu chi cho Finance Agent: ghi khoản chi/thu, hỏi tổng tiền, số dư, xoá giao dịch."""
             return self._delegate("finance", request)
 
         @agent_tool(risk=Risk.READ, timeout_s=300)

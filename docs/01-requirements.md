@@ -22,7 +22,7 @@ Kết luận: dùng agent cho phần hiểu yêu cầu và chọn hành động;
 ## 4. Yêu cầu chức năng
 ### Finance
 - Ghi thu/chi theo danh mục: ăn uống, di chuyển, mua sắm, giải trí, khác (chi); thu nhập, phụ cấp gia đình (thu).
-- Báo cáo: tổng chi, tổng thu, **chi ròng = chi − thu**, theo ngày/tuần/tháng/danh mục; ngân sách và cảnh báo.
+- Báo cáo: tổng chi, tổng thu, **số dư = thu − chi**, theo ngày/tuần/tháng/danh mục; ngân sách và cảnh báo.
 - Nhập bằng chữ, ảnh hóa đơn, giọng nói; giao dịch từ ảnh/giọng nói chờ xác nhận.
 
 ### Schedule

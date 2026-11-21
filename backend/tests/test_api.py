@@ -76,6 +76,19 @@ def test_finance_crud_and_business_errors(make_client):
     assert [e.action for e in rt.audit.recent()] == ["web:delete_transaction", "web:add_transaction"]
 
 
+def test_finance_summary_start_end_overrides_period(make_client):
+    """Lọc theo ngày tuỳ ý trên giao diện Chi tiêu: start=end=một ngày bất kỳ, kể cả ngày đã qua lâu,
+    không phụ thuộc các khoảng period cố định (period vẫn áp dụng khi không truyền start/end)."""
+    client, _ = make_client()
+    login(client)
+    client.post("/api/finance/transactions", json={"amount_vnd": 20000, "category": "an_uong",
+                                                     "occurred_on": "2020-05-01"})
+    assert client.get("/api/finance/summary").json()["total_expense_vnd"] == 0  # ngoài "tháng này"
+    r = client.get("/api/finance/summary?start=2020-05-01&end=2020-05-01")
+    assert r.json()["total_expense_vnd"] == 20000
+    assert (r.json()["start"], r.json()["end"]) == ("2020-05-01", "2020-05-01")
+
+
 def test_events_and_schedule(make_client):
     client, _ = make_client()
     login(client)

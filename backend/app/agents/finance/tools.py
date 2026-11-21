@@ -60,7 +60,7 @@ def build_finance_tools(session_factory: SessionFactory, today: Callable[[], dat
 
     @agent_tool(risk=Risk.READ)
     def get_summary(period: PeriodArg = None, start: StartArg = None, end: EndArg = None) -> Summary:
-        """Tổng chi, tổng thu, chi ròng (= chi − thu) và chi tiết theo danh mục trong một khoảng thời gian.
+        """Tổng chi, tổng thu, số dư (= thu − chi) và chi tiết theo danh mục trong một khoảng thời gian.
         Luôn dùng tool này cho câu hỏi về tổng tiền — không tự cộng."""
         s, e = date_range(period, start, end)
         return with_service(lambda svc: svc.get_summary(s, e))

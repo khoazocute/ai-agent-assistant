@@ -42,7 +42,7 @@ def test_db_itself_rejects_non_positive_amount(svc):
     svc.s.rollback()  # phiên hỏng sau lỗi flush — dọn để fixture đóng phiên sạch sẽ
 
 
-def test_summary_net_spending_is_expense_minus_income(svc):
+def test_summary_balance_is_income_minus_expense(svc):
     svc.add_transaction(45_000, "an_uong")
     svc.add_transaction(55_000, "an_uong")
     svc.add_transaction(100_000, "di_chuyen")
@@ -50,7 +50,7 @@ def test_summary_net_spending_is_expense_minus_income(svc):
     svc.add_transaction(999_000, "mua_sam", date(2026, 10, 31))  # ngoài khoảng → không tính
 
     r = svc.get_summary(date(2026, 11, 1), date(2026, 11, 30))
-    assert (r.total_expense_vnd, r.total_income_vnd, r.net_spending_vnd) == (200_000, 150_000, 50_000)
+    assert (r.total_expense_vnd, r.total_income_vnd, r.balance_vnd) == (200_000, 150_000, -50_000)
     assert r.transaction_count == 4
     # Chi xếp trước (lớn → nhỏ, bằng nhau thì theo tên khoá), thu xếp sau; % chỉ tính trên tổng chi.
     assert [(c.category, c.amount_vnd, c.percent_of_expense) for c in r.by_category] == [
@@ -58,16 +58,16 @@ def test_summary_net_spending_is_expense_minus_income(svc):
     ]
 
 
-def test_summary_can_be_negative_when_income_exceeds_spending(svc):
+def test_summary_balance_is_positive_when_income_exceeds_spending(svc):
     svc.add_transaction(10_000_000, "thu_nhap")
     svc.add_transaction(30_000, "an_uong")
     r = svc.get_summary(TODAY, TODAY)
-    assert r.net_spending_vnd == -9_970_000
+    assert r.balance_vnd == 9_970_000
 
 
 def test_empty_summary_has_no_division_by_zero(svc):
     r = svc.get_summary(TODAY, TODAY)
-    assert (r.total_expense_vnd, r.net_spending_vnd, r.by_category) == (0, 0, [])
+    assert (r.total_expense_vnd, r.balance_vnd, r.by_category) == (0, 0, [])
 
 
 def test_list_is_newest_first_and_filterable(svc):

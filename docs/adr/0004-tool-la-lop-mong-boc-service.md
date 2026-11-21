@@ -17,7 +17,7 @@ Finance Agent là agent đầu tiên chạm dữ liệu thật. Cùng một nghi
 Chọn **B**.
 - `services/finance_service.py`: nghiệp vụ + kiểm tra (số tiền > 0, danh mục hợp lệ, không ghi ngày tương lai), trả pydantic model.
 - `agents/finance/tools.py`: mỗi tool = mở phiên DB → gọi đúng một hàm service → trả kết quả. Không có `if` nghiệp vụ.
-- **Mọi con số do code tính**: tổng chi, tổng thu, chi ròng, %, và cả khoảng thời gian (`period="last_month"` → code quy ra ngày, LLM không tự cộng trừ ngày).
+- **Mọi con số do code tính**: tổng chi, tổng thu, số dư, %, và cả khoảng thời gian (`period="last_month"` → code quy ra ngày, LLM không tự cộng trừ ngày).
 - Tiền là số nguyên VND dương; thu/chi do `Category.kind` quyết định. Ràng buộc `amount_vnd > 0` đặt cả ở service lẫn DB (`CHECK`).
 - DB: SQLAlchemy 2 + SQLite (file `backend/data/app.db`, không commit). Đổi sang PostgreSQL chỉ đổi `DATABASE_URL` (bước 13, kèm Alembic).
 

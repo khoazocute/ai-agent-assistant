@@ -47,7 +47,7 @@ class BriefData(BaseModel):
     spent_yesterday_vnd: int
     month_expense_vnd: int
     month_income_vnd: int
-    month_net_vnd: int
+    month_balance_vnd: int  # = thu − chi (dương là dư, âm là bội chi)
     top_categories_today: list[tuple[str, int]]
     new_emails: list[BriefEmail]
     pending_approvals: int
@@ -84,7 +84,7 @@ class BriefingService:
             spent_today_vnd=day_summary.total_expense_vnd,
             spent_yesterday_vnd=fin.get_summary(today - timedelta(days=1), today - timedelta(days=1)).total_expense_vnd,
             month_expense_vnd=month.total_expense_vnd, month_income_vnd=month.total_income_vnd,
-            month_net_vnd=month.net_spending_vnd,
+            month_balance_vnd=month.balance_vnd,
             top_categories_today=[(c.category_name, c.amount_vnd) for c in day_summary.by_category
                                   if c.kind == "expense"][:3],
             new_emails=[BriefEmail(from_addr=e.from_addr, subject=e.subject, category=e.category,
@@ -115,7 +115,7 @@ def fallback_text(d: BriefData) -> str:
         top = ", ".join(f"{name} {vnd(a)}" for name, a in d.top_categories_today)
         lines.append(f"💸 Hôm nay chi {vnd(d.spent_today_vnd)}" + (f" ({top})" if top else ""))
         lines.append(f"   Tháng này: chi {vnd(d.month_expense_vnd)}, thu {vnd(d.month_income_vnd)}, "
-                     f"chi ròng {vnd(d.month_net_vnd)}")
+                     f"số dư {vnd(d.month_balance_vnd)}")
     if d.tasks_due_soon:
         lines.append("✅ Việc sắp đến hạn: " + ", ".join(f"{t.title} ({t.deadline})" for t in d.tasks_due_soon))
     if d.new_emails:

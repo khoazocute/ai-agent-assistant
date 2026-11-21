@@ -20,7 +20,7 @@ export default function Dashboard() {
         <Stat label="Chi hôm nay" value={vnd(todaySpend.data?.total_expense_vnd)} />
         <Stat label="Chi tháng này" value={vnd(summary.data?.total_expense_vnd)} />
         <Stat label="Thu tháng này" value={vnd(summary.data?.total_income_vnd)} tone="income" />
-        <Stat label="Chi ròng (chi − thu)" value={vnd(summary.data?.net_spending_vnd)} />
+        <Stat label="Số dư (thu − chi)" value={vnd(summary.data?.balance_vnd)} />
       </div>
 
       <div className="grid section">
